@@ -1,99 +1,91 @@
-/**
- * Created by Roee Toledano on 7/6/2023.
- * This is the source code for the preassembler.
- * NOTES:
- * 1. make it so the user inputs the file name
- * 2. make code tidier and nicer
- * 3. take care of error when theres blank lines in the macro definition
-*/ 
-
 #include "preassembler.h"
 
-/** 
- * A helper function.
- *  ADD DESCRIPTION HERE
- * */
+int write_line(FILE* amFile, macro* head, char originalLine[], char line[]){
+    char* token;
 
-/*/ make this piece of code nicer*/ 
-int macro_code(char* line, FILE* amFile, macro* macros, int macroSize, int macroIndex){
-    macros[macroIndex].code = (char*)realloc(macros[macroIndex].code, sizeof(char)*(macroSize+1));
-    strcat(macros[macroIndex].code, line);
+    token = strtok(line, DELIMITERS);
+    while (head != NULL){
+        if (strcmp(head->name, token) == 0){
+            fprintf(amFile, "%s", head->code);
+            return 0;
+        }
+        head = head->next;
+    }
+    fprintf(amFile, "%s", originalLine);
     return 0;
 }
 
-/**
- * A helper function.
- * its purpose is to check whether the piece of code is a macro, or an ordinary line of code, and write to the output file accodingly.
- * */
+/* make this piece of code nicer. */
+int add_macro_codelines(FILE* asFile, char* code, char line[], char originalLine[]){
+    char* token;
 
-int write_to_file(char* token, char line[], int macroIndex, macro* macros, char* word, FILE* amFile){
-    int i;
-    for (i = 0; i < macroIndex+1; i++){
-        if (strcmp(word, macros[i].name) == 0){
-            fprintf(amFile, "%s", macros[i].code);
-            return 1;
+    do {
+        fgets(line, MAX_LINE_LENGTH, asFile);
+        strcpy(originalLine, line);
+        token = strtok(line, DELIMITERS);
+    }
+    while (token == NULL);
+
+    while (strcmp(token, "endmcro") != 0){
+        if (*token != ';'){ /* can there be any comments in macro definition? */
+            code = (char*)realloc(code, sizeof(char) * (strlen(code) + strlen(originalLine) + 1));
+            strcat(code, originalLine);
+            do {
+                fgets(line, MAX_LINE_LENGTH, asFile);
+                strcpy(originalLine, line);
+                token = strtok(line, DELIMITERS);
+            }
+            while (token == NULL);
         }
     }
-
-    fprintf(amFile, "%s", line);
-    return 1;
+    return 0;
 }
 
-/**
- * The core function of the preassembler.
- * This function loops over the source file, and using the helper functions, analyzes each line and writes to the output file accordingly.
-*/
-int main_pass(){
+macro* add_macro_node(macro* head, char* name){
+    macro* newMacro;
+    newMacro = (macro*)malloc(sizeof(macro));
+
+    newMacro->next = head;
+    newMacro->name = (char*)malloc(sizeof(char) * strlen(name));
+    newMacro->code = (char*)calloc(1, sizeof(char*));
+
+    strcpy(newMacro->name, name);
+
+    return newMacro;
+}
+
+/*handles the input and output file*/
+int file_handler(){
     FILE* asFile;
     FILE* amFile;
 
-    char line[82], orgLine[82]; /*/ need to check if i can assume a max line length */
+    macro* head;
+
     char* token;
-    macro* macros;
-    int macroIndex, macroSize;
+    char line[MAX_LINE_LENGTH],  originalLine[MAX_LINE_LENGTH];
 
-    macroIndex = -1;
-    macros = NULL;
-
+    head = NULL;
     asFile = fopen("source.as", "r"); /*/ need to change them so the user inputs the file names */
     amFile = fopen("result.am", "w");
 
     while (fgets(line, 30, asFile) != NULL){
-        strcpy(orgLine, line);
+        strcpy(originalLine, line);
         token = strtok(line, DELIMITERS);
 
         if (token != NULL && *token != ';'){
-            if (strcmp(token, "mcro") == 0){ /*if the following is a macro definition*/
-                macroSize = 0;
-                macroIndex++;
-
-                macros = (macro*)realloc(macros, sizeof(macro)*(macroIndex+1));
-                macros[macroIndex].name = (char*)malloc(sizeof(char)*strlen(token));
-                macros[macroIndex].code = (char*)calloc(strlen(token), sizeof(char)*macroSize);
-                /*/ check for failed allocation/reallocation*/
-
-                fgets(line, 30, asFile); 
-                strcpy(orgLine, line); 
-                token = strtok(line, DELIMITERS); 
-                while (strcmp(token, "endmcro") != 0){ 
-                    macroSize += strlen(orgLine); 
-                    macro_code(orgLine, amFile, macros, macroSize, macroIndex); 
-                    fgets(line, 30, asFile);    
-                    strcpy(orgLine, line); 
-                    token = strtok(line, DELIMITERS); 
-                }
-
+            if (strcmp(token, "mcro") == 0){
+                token = strtok(NULL, DELIMITERS);
+                head = add_macro_node(head, token);
+                add_macro_codelines(asFile, head->code, line, originalLine);
             }
             else
-                write_to_file(token, orgLine, macroIndex, macros, token, amFile);
-        }    
+                write_line(amFile, head, originalLine, line);
+        }
     }
-}
-
-int main(){
-    main_pass();
     return 0;
 }
 
-
-
+int main(int argc, char* argv[]){
+    file_handler();
+    return 0;
+}

@@ -10,6 +10,88 @@
 
 #include "firstpass.h"
 
+int error_handler(int errorCode, int lineNum);
+
+char* replace_commas(char* str){
+    int i, j;
+    char* result;
+
+    if (str == NULL)
+        return NULL;
+
+    result = (char*)malloc(sizeof(char) * (strlen(str)+100));  /* NOTE: need allocate more memory for the modified string! */
+
+    if (result == NULL) {
+        printf("failed to allocate memory!");
+        return NULL;
+    }
+
+    i = j = 0; /*i - index of current char in original string j- index of current char in the return string */
+    for (i = 0; str[i] != '\0'; i++) {
+        if (str[i] == ',') {
+            result[j++] = ' ';
+            result[j++] = ',';
+            result[j++] = ' ';
+        } else {
+            result[j++] = str[i];
+        }
+    }
+    result[j] = '\0';
+
+    return result;
+}
+
+void remove_spaces(char* str) {
+    int i, j;
+
+    if (str == NULL)
+        return;
+
+    for (i = 0, j = 0; str[i] != '\0'; i++) { /*i - index of current char j- index of current char that isnt a space character */
+        if (str[i] != ' ') {
+            str[j] = str[i];
+            j++;
+        }
+    }
+    str[j] = '\0';
+}
+
+// this function receives a data line, it analyses it, seperates each data field.
+// NOTE: might want to remove char* result and just use the original dataLine
+// NOTE: if needed a more deep analysis of the data, use the 'mycomp.c - maman22' function
+int analyse_data(char dataLine[], int lineNum){
+    char* toCheck;
+    char* token;
+    int* dataValues;
+    int commaCnt, paramCnt;
+
+    paramCnt = commaCnt = 0;
+
+    remove_spaces(dataLine);
+    toCheck = replace_commas(dataLine);
+
+    token = strtok(toCheck, " ");
+
+    while (token != NULL){
+        if (*token != ','){
+            paramCnt++;
+            // write_data();
+            dataValues = (int*)realloc(dataValues, sizeof(int) * paramCnt);
+            dataValues[paramCnt-1] = atoi(token);
+        }
+        else
+            commaCnt++;
+
+        token = strtok(NULL, " ");
+    }
+    if (paramCnt - commaCnt != 1)
+            return error_handler(_commaerror_, lineNum);
+    for (int i = 0; i < paramCnt; i++)
+        printf("wrote %d\n", dataValues[i]);
+
+    return 0;
+}
+
 FILE* open_file(char* fileName, int numOfEntries, char* ending){
     FILE* file;
     if (numOfEntries == 0)
@@ -20,28 +102,20 @@ FILE* open_file(char* fileName, int numOfEntries, char* ending){
 }
 
 /*adds a new label to the label table*/
-label* add_label(label* labelHead, label* newLabel, char labelName[], int counterType, int lineNum){
-    newLabel = (label*)malloc(sizeof(label*));
-    
-    if (labelHead == NULL){
-        labelHead = newLabel;
-        labelHead->next = NULL;
-    }
+int add_label(label* labelTable, char labelName[], int counterType, int lineNum, int* labelIndex){
+    int i;
+    (*labelIndex)++;
+    labelTable = (label*)realloc(labelTable, sizeof(label) * ((*labelIndex)+1));
 
-    while (labelHead->next != NULL){
-        if (strcmp(newLabel->name, labelName) == 0){
+    for (i = 0; i <= *labelIndex; i++)
+        if (strcmp(labelTable[i].name, labelName) == 0)
             return error_handler(Label_Already_Exists, lineNum);
-        }
-        labelHead = labelHead->next;
-    }
-
-    if (labelHead->next != NULL)
-        labelHead->next = newLabel;
-    strcpy(newLabel->name, labelName);
-    newLabel->line = lineNum;
-    newLabel->counterType = counterType;
-    newLabel->type = 0; /* 0 = entry, 1 = external, 2 = data, 3 = code?*/
-    return newLabel;
+    
+    strcpy(labelTable[*labelIndex].name, labelName);
+    labelTable[*labelIndex].line = lineNum;
+    labelTable[*labelIndex].type = 0;
+    labelTable[*labelIndex].counterType = counterType; /*change that to a pointer outside of the function*/
+    return 0;
 }
 
 int error_handler(int errorCode, int lineNum){ /*in line num just input DC+IC-1*/ 
@@ -54,7 +128,10 @@ int error_handler(int errorCode, int lineNum){ /*in line num just input DC+IC-1*
             break;
         case Label_Already_Exists: 
             printf("Error: line %d: label already exists.\n", lineNum);
-            return -1;    
+            break;   
+        case _commaerror_:
+            printf("Error: line %d: comma error.\n", lineNum);
+            break;
     }
     return -1;
 }
@@ -62,21 +139,25 @@ int error_handler(int errorCode, int lineNum){ /*in line num just input DC+IC-1*
 int is_instruction_operation(){
     return 0;
 }
+
 /* NOTE: add_label is called from here, but it might be more organized and right to call it from the input_handler function.*/ 
-int is_guidance_operation(label* labelHead, label* newLable, char labelName[], char* token, int isLabel, int lineNum){
+int is_guidance_operation(label* labelTable, char labelName[], char* token, int isLabel, int lineNum, int* labelIndex){
     if (strcmp(token, ".data") == 0 || strcmp(token, ".string") == 0){
         if (isLabel == 1)
-            add_label(labelHead, newLable, labelName, VAL_DC, lineNum); /* add the label to the label table, using DC, if the label already exists, print error */
+            add_label(labelTable, labelName, Data, lineNum, labelIndex); /* add the label to the label table, using DC, if the label already exists, print error */
         
+        token = strtok(NULL, DELIMITERS);
+        analyse_data(token, lineNum);
         /* זהה את סוג הנתונים, קודד אותם בזיכרון, עדכן את מונה הנתונים דכ בהתאם לאורכם */
         return 1;
     }
     else if (strcmp(token, ".extern")){
-        /*
+        token = strtok(NULL, DELIMITERS);
         while (token != NULL){
-
+            add_label(labelTable, token, Extern, lineNum, labelIndex); /* add the label to the label table, using IC, if the label already exists, print error */
+            token = strtok(NULL, DELIMITERS);
         }    
-        */    
+           
         return 1;
     }
     if (strcmp(token, ".entry")){
@@ -84,11 +165,6 @@ int is_guidance_operation(label* labelHead, label* newLable, char labelName[], c
     }
     return 0; 
 }
-
-/*The following function is a helper function. its job is to check whether or not the following line is
- a label decleration.
- returns 1 if it is a lable, 0 if its not. 
-*/
 
 int is_label(char** token, char labelName[], char originalLine[]){
     *token = strtok(originalLine, DELIMITERS);
@@ -101,36 +177,35 @@ int is_label(char** token, char labelName[], char originalLine[]){
     return 0;
 }
 
-/* The following function reads the next line from the .am (input file).
- It serves as the 'heart' of the program, calling and linking all the analasys and helper functions together.
-*/
 int input_handler(){
     FILE* amFile;
-    label* labelHead;
-    label* newLabel;
+    label* labelTable;
 
     char* token;
     char labelName[MAX_LABEL_LENGTH];
     char originalLine[MAX_LINE_LENGTH], line[MAX_LINE_LENGTH];
+    int labelIndex;
     int lineNum, isLabel;
     int DC, IC;
 
     DC = IC = 0;
     lineNum = 0;
+    labelIndex = -1;
+    
     amFile = fopen("result.am", "r");
+    labelTable = (label*)malloc(sizeof(label*));
 
     while (fgets(originalLine, MAX_LINE_LENGTH, amFile)){
         lineNum++;
         strcpy(line, originalLine);
 
         isLabel = is_label(&token, labelName, originalLine);
-        /* if (is_guidance_operation(labelHead, newLabel, labelName, token, isLabel, lineNum) != 1 && is_instruction_operation() != 1){
+        if (is_guidance_operation(labelTable, labelName, token, isLabel, lineNum, &labelIndex) != 1 && is_instruction_operation() != 1){
             error_handler(No_Valid_Operation, lineNum);
-        } */
-        labelHead = add_label(labelHead, newLabel, labelName, VAL_IC, lineNum);
-        printf("%s\n", labelHead->name);
+        }
+        printf("%s\n", labelTable[labelIndex].name);
     }
-    return error_handler(Cant_Read_Line, lineNum);
+    return 0;
 }
 
 int main(){

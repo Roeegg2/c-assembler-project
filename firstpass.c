@@ -10,7 +10,7 @@
 
 #include "firstpass.h"
 
-int error_handler(int errorCode, int lineNum);
+int error_handler();
 
 char* replace_commas(char* str){
     int i, j;
@@ -56,13 +56,68 @@ void remove_spaces(char* str) {
     str[j] = '\0';
 }
 
+/* need to check if there is a certain type of parameteres for each operation, and add error detection here or in is_instruction_operation */
+int analyse_operands(char operandLine[], int lineNum) {
+    char* toCheck;
+    char* token;
+    int commaCnt, paramCnt;
+
+    paramCnt = commaCnt = 0;
+
+    remove_spaces(operandLine);
+    toCheck = replace_commas(operandLine);
+
+    token = strtok(toCheck, " ");
+
+    
+
+    // call write_to_memory();
+
+    return 0;
+}
+int convert_to_binary(int number, char binary[]){
+    int i, numberOfZeros;
+    char* temp; // might want to use dynamic allocation 
+
+    i = 11;
+    while (number > 0) {
+        binary[i] = '0' + (number % 2);
+        number /= 2;
+        i--;
+    }
+
+    while (i >= 0) {
+        binary[i] = '0';
+        i--;
+    }
+    
+    return 0;
+}
+
+int write_data_to_file(int* params, int paramCnt, int lineNum){
+    FILE* obFile;
+    char binary[12];
+
+    // obFile = open_file();
+
+    for (int i = 0; i < paramCnt; i++){
+        convert_to_binary(params[i], binary);
+        // fprintf(obFile, "%s", binary);
+        printf("binary of %d is: %s\n", params[i], binary);
+    }
+        
+}
+
 // this function receives a data line, it analyses it, seperates each data field.
 // NOTE: might want to remove char* result and just use the original dataLine
 // NOTE: if needed a more deep analysis of the data, use the 'mycomp.c - maman22' function
-int analyse_data(char dataLine[], int lineNum){
+// Maybe turn this into comma-handler/param-analyser
+
+/* seperate and isolate each parameter, and return a string arary with all the parameters */
+int data_handler(char dataLine[], int lineNum){
     char* toCheck;
     char* token;
-    int* dataValues;
+    int* params;
     int commaCnt, paramCnt;
 
     paramCnt = commaCnt = 0;
@@ -75,9 +130,13 @@ int analyse_data(char dataLine[], int lineNum){
     while (token != NULL){
         if (*token != ','){
             paramCnt++;
-            // write_data();
-            dataValues = (int*)realloc(dataValues, sizeof(int) * paramCnt);
-            dataValues[paramCnt-1] = atoi(token);
+
+            if(strspn(token, "-+0123456789") == strlen(token)){
+                params = (int*)realloc(params, sizeof(int) * paramCnt);
+                params[paramCnt-1] = atoi(token);
+            }
+            else
+                error_handler(); // input isnt a number
         }
         else
             commaCnt++;
@@ -86,12 +145,14 @@ int analyse_data(char dataLine[], int lineNum){
     }
     if (paramCnt - commaCnt != 1)
             return error_handler(_commaerror_, lineNum);
-    for (int i = 0; i < paramCnt; i++)
-        printf("wrote %d\n", dataValues[i]);
+
+    write_data_to_file(params, paramCnt, lineNum);
 
     return 0;
 }
 
+
+/*a function for opening a file for writing (to be used later on obj, ext and ent files)*/
 FILE* open_file(char* fileName, int numOfEntries, char* ending){
     FILE* file;
     if (numOfEntries == 0)
@@ -118,7 +179,10 @@ int add_label(label* labelTable, char labelName[], int counterType, int lineNum,
     return 0;
 }
 
-int error_handler(int errorCode, int lineNum){ /*in line num just input DC+IC-1*/ 
+int error_handler(){
+    return 0;
+}
+/* int error_handler(int errorCode, int lineNum){
     switch(errorCode){
         case No_Valid_Operation:
             printf("Error: line %d: no such operation found.\n", lineNum);
@@ -134,20 +198,62 @@ int error_handler(int errorCode, int lineNum){ /*in line num just input DC+IC-1*
             break;
     }
     return -1;
-}
+} */
 
-int is_instruction_operation(){
+int is_instruction_operation(label* labelTable, char* token, char labelName[], int* labelIndex, int isLabel, int lineNum){
+    int opcode;
+
+    if (strcmp(token, "mov") == 0)
+        opcode = Mov;
+    else if (strcmp(token, "cmp"))
+        opcode = Cmp;
+    else if (strcmp(token, "add") == 0)
+        opcode = Add;
+    else if (strcmp(token, "sub") == 0)
+        opcode = Sub;
+    else if (strcmp(token, "lea") == 0)
+        opcode = Lea;
+    else if (strcmp(token, "clr") == 0)
+        opcode = Clr;
+    else if (strcmp(token, "not") == 0)
+        opcode = Not;
+    else if (strcmp(token, "inc") == 0)
+        opcode = Inc;
+    else if (strcmp(token, "dec") == 0)
+        opcode = Dec;
+    else if (strcmp(token, "jmp") == 0)
+        opcode = Jmp;
+    else if (strcmp(token, "bne") == 0)
+        opcode = Bne;
+    else if (strcmp(token, "red") == 0)
+        opcode = Red;
+    else if (strcmp(token, "prn") == 0)
+        opcode = Prn;
+    else if (strcmp(token, "jsr") == 0)
+        opcode = Jsr;
+    else if (strcmp(token, "rts") == 0)
+        opcode = Rts;
+    else if (strcmp(token, "stop") == 0)
+        opcode = Stop;
+    else
+        return error_handler(No_Valid_Operation, lineNum);
+
+    if (isLabel == 1)
+        add_label(labelTable, labelName, Instruction, lineNum, labelIndex);
+
+    
+    // analyse_operands();
     return 0;
 }
 
 /* NOTE: add_label is called from here, but it might be more organized and right to call it from the input_handler function.*/ 
-int is_guidance_operation(label* labelTable, char labelName[], char* token, int isLabel, int lineNum, int* labelIndex){
+int is_guidance_operation(label* labelTable, char* token, char labelName[], int* labelIndex, int isLabel, int lineNum){
     if (strcmp(token, ".data") == 0 || strcmp(token, ".string") == 0){
         if (isLabel == 1)
             add_label(labelTable, labelName, Data, lineNum, labelIndex); /* add the label to the label table, using DC, if the label already exists, print error */
         
-        token = strtok(NULL, DELIMITERS);
-        analyse_data(token, lineNum);
+        token = strtok(NULL, " \t\n");
+        data_handler(token, lineNum);
         /* זהה את סוג הנתונים, קודד אותם בזיכרון, עדכן את מונה הנתונים דכ בהתאם לאורכם */
         return 1;
     }
@@ -157,10 +263,9 @@ int is_guidance_operation(label* labelTable, char labelName[], char* token, int 
             add_label(labelTable, token, Extern, lineNum, labelIndex); /* add the label to the label table, using IC, if the label already exists, print error */
             token = strtok(NULL, DELIMITERS);
         }    
-           
         return 1;
     }
-    if (strcmp(token, ".entry")){
+    else if (strcmp(token, ".entry")){
         return 1;
     }
     return 0; 
@@ -177,6 +282,7 @@ int is_label(char** token, char labelName[], char originalLine[]){
     return 0;
 }
 
+/*the core of the first pass. This function*/
 int input_handler(){
     FILE* amFile;
     label* labelTable;
@@ -200,10 +306,12 @@ int input_handler(){
         strcpy(line, originalLine);
 
         isLabel = is_label(&token, labelName, originalLine);
-        if (is_guidance_operation(labelTable, labelName, token, isLabel, lineNum, &labelIndex) != 1 && is_instruction_operation() != 1){
-            error_handler(No_Valid_Operation, lineNum);
+        if (is_guidance_operation(labelTable, token, labelName, &labelIndex, isLabel, lineNum) != 1){
+            error_handler();
         }
-        printf("%s\n", labelTable[labelIndex].name);
+        /* if (is_instruction_operation() != 1){
+
+        } */
     }
     return 0;
 }

@@ -6,13 +6,15 @@
 #define MAX_LABEL_LENGTH 31
 // check this and change later!
 #define MAX_DATA_LENGTH 10 
-#define DELIMITERS " \t\n"
+#define DELIMITERS " \t\n,"
 #define MAX_OPERANDS 2
+#define TRUE 1
+#define FALSE 0
 
 #define LAST_CHARACTER(string) *(string+strlen(string)-1)
 
 enum Opcodes {Mov = 0, Cmp, Add, Sub, Not, Clr, Lea, Inc, Dec, Jmp, Bne, Red, Prn, Jsr, Rts, Stop};
-enum AddressingModes {Immidiate = 1, Direct = 3, Register = 5};
+enum AddressingModes {No_Operand = -1, Immidiate = 1, Direct = 3, Register = 5};
 enum Errors {No_Valid_Operation = 0, Cant_Read_Line, Label_Already_Exists, _commaerror_};
 enum TypeMarking {Data = 0, Instruction, Extern, Entry}; /*not sure about entry*/
 
@@ -23,32 +25,16 @@ typedef struct label{
     int counterType;
 } label;
 
-/* typedef union operand{
-    label* label1;
-    int registerNum;
-    int number;
+typedef union operand{
+    // int nonExistent : 1; // might want to remove that
+    int registerNumber;
+    int value;
+    char label[MAX_LABEL_LENGTH];
 } operand;
-
-typedef union data{
-    int number;
-    char string[MAX_LINE_LENGTH];
-} data; */
-
-/* typedef struct instruction{
+typedef struct command{
     int opcode;
-    int sourceAddressingModes;
-    int destAddressingModes;
-} instruction;
-
-typedef union parameter{
-    union{
-        char labelName[MAX_LABEL_LENGTH];
-        int registerNum;
-        int number;
-    } operand;
-
-    union{
-        int number;
-        char string[MAX_DATA_LENGTH];
-    } data;
-} parameter; */
+    int sourceAddressingMode;
+    int destAddressingMode;
+    operand sourceOperand;
+    operand destOperand;
+} command;

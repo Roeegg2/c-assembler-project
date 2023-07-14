@@ -1,24 +1,12 @@
 /**
- * General note: go over and making implementaions of everything more clean, efficient and readable. That means:
- * 1. brake some functions down
- * 2. try to minimize code duplication, unifiying things that can be unified
- * 3. make sure the flow of the program is clear yet logical, to make sure you and the person reading the code will understand it.
- * 
- * NOTES_REGARDING_CODE:
- * 1. change ugly implementation of the whole writing to binary of .data and .string entries.
- * 
- * 
- * 
- * NOTES_TO_SELF:
- * 1. function parameter sequence: pointers, arrays, simple data types 
- * (structs, weird built in datatypes, char, long, double, float, int, boolean-treated-ints)
- * 
+ * NOTES:
+ * Things left to implement:
+ * 1.  
 */
 
 #include "firstpass.h"
 
-int error_handler();
-
+/*------------------------------------------------------------- FUNCTIONS NOT IN USE RIGHT NOW, BUT NEED LATER ----------------------------------*/
 char* replace_commas(char* str){
     int i, j;
     char* result;
@@ -63,25 +51,31 @@ void remove_spaces(char* str) {
     str[j] = '\0';
 }
 
-/* need to check if there is a certain type of parameteres for each operation, and add error detection here or in is_instruction_operation */
-int analyse_operands(char operandLine[], int lineNum) {
-    char* toCheck;
-    char* token;
-    int commaCnt, paramCnt;
-
-    paramCnt = commaCnt = 0;
-
-    remove_spaces(operandLine);
-    toCheck = replace_commas(operandLine);
-
-    token = strtok(toCheck, " ");
-
-    // call write_to_memory();
-
+/* ------------------------------------------------------------ FUNCTIONS IN USE BUT THAT RETURN WORTHLESS VALUES ---------------------------------- */
+int write_operand_word(){
     return 0;
 }
 
-void convert_to_binary(int number, char binary[], int size) {
+int error_handler(){
+    return 0;
+}
+
+int* add_extern_labels(){
+    /* token = strtok(NULL, DELIMITERS);
+    while (token != NULL){
+            // add to the list of yet unknown labels!
+        add_label_use(labelTable, token, Extern, lineNum, labelCount); // add the label to the label table, using IC, if the label already exists, print error
+        token = strtok(NULL, DELIMITERS);
+    } */
+    int* ptr;
+    ptr = (int*)malloc(sizeof(int));
+    return ptr;
+}
+
+/* ----------------------------------------------------------------- FUNCTIONS IN USE ------------------------------------------------------------------- */
+
+/* what is counter type? maybe switch (*labelTable) with something more readable? */
+int convert_to_binary(int number, char binary[], int size){
     int i = size - 1;
     while (number > 0) {
         binary[i] = '0' + number % 2;
@@ -92,90 +86,22 @@ void convert_to_binary(int number, char binary[], int size) {
         binary[i] = '0';
         i--;
     }
-}
-
-
-
-void write_data_to_file(int* params, int paramCnt, int lineNum) {
-    FILE* obFile;
-
-    obFile = fopen("prog.ob", "w");
-    if (obFile == NULL) {
-        printf("Failed to open prog.ob for writing!\n");
-        return;
-    }
-
-    for (int i = 0; i < paramCnt; i++) {
-        char binary[13];  // 12 binary digits + 1 null terminator
-        convert_to_binary(params[i], binary, 12);
-        fprintf(obFile, "%s\n", binary);
-    }
-
-    fclose(obFile);
-}
-
-
-
-
-// this function receives a data line, it analyses it, seperates each data field.
-// NOTE: might want to remove char* result and just use the original dataLine
-// NOTE: if needed a more deep analysis of the data, use the 'mycomp.c - maman22' function
-// Maybe turn this into comma-handler/param-analyser
-
-/* seperate and isolate each parameter, and return a string arary with all the parameters */
-int data_handler(char* token, int lineNum){
-    char* toCheck;
-    int* params;
-    int commaCnt, paramCnt;
-
-    paramCnt = commaCnt = 0;
-
-    /* remove_spaces(dataLine);
-    toCheck = replace_commas(dataLine); */
-
-    /* token = strtok(toCheck, " "); */
-    params = (int*)calloc(paramCnt, sizeof(int));
-
-    while (token != NULL){
-        if (*token != ','){
-            paramCnt++;
-
-            if(strspn(token, "-+0123456789") == strlen(token)){
-                params = (int*)realloc(params, sizeof(int) * paramCnt);
-                params[paramCnt-1] = atoi(token);
-            }
-            else
-                error_handler(); // input isnt a number
-        }
-        else
-            commaCnt++;
-
-        token = strtok(NULL, DELIMITERS);
-    }
-
-    write_data_to_file(params, paramCnt, lineNum);
-
     return 0;
 }
 
-/*adds a new label to the label table*/
-int add_label(label* labelTable, char labelName[], int counterType, int lineNum, int* labelIndex){
+int add_label(label** labelTable, char labelName[], int* labelCount, int counterType, int lineNum){
     int i;
-    (*labelIndex)++;
-    labelTable = (label*)realloc(labelTable, sizeof(label) * ((*labelIndex)+1));
+    (*labelTable) = (label*)realloc((*labelTable), sizeof(label) * ((*labelCount)+1));
 
-    for (i = 0; i <= *labelIndex; i++)
-        if (strcmp(labelTable[i].name, labelName) == 0)
+    for (i = 0; i <= *labelCount; i++)
+        if (strcmp((*labelTable)[i].name, labelName) == 0)
             return error_handler(Label_Already_Exists, lineNum);
     
-    strcpy(labelTable[*labelIndex].name, labelName);
-    labelTable[*labelIndex].line = lineNum;
-    labelTable[*labelIndex].type = 0;
-    labelTable[*labelIndex].counterType = counterType; /*change that to a pointer outside of the function*/
-    return 0;
-}
-
-int error_handler(){
+    strcpy((*labelTable)[*labelCount].name, labelName);
+    (*labelTable)[*labelCount].line = lineNum;
+    (*labelTable)[*labelCount].type = 0;
+    (*labelTable)[*labelCount].counterType = counterType; /*change that to a pointer outside of the function*/
+    (*labelCount)++;
     return 0;
 }
 
@@ -191,8 +117,8 @@ int get_operand_type(operand* op, char* token, int lineNum){
         return Immidiate;
     }
     else if (token[0] == '@' && token[1] == 'r'){
-        foo[1] = token[2];
-        if (strspn(foo, "012345678") == strlen(foo)){
+        foo[0] = token[2];
+        if (strspn(foo, "012345678") == 1){
             op->registerNumber = atoi(foo);
             return Register;
         }
@@ -203,168 +129,261 @@ int get_operand_type(operand* op, char* token, int lineNum){
     return Direct;
 }
 
-int write_first_word(command* currCommand){
+int write_first_word(operation* operationn){
     FILE* obFile;
 
-    obFile = fopen("prog.ob", "a");
+    obFile = open_file("prog", ".ob", "a");
 
-    char sourceAddressingMode[4];
+    char sourceAM[4];
     char opcode[5];
-    char destAddressingMode[4];
-    convert_to_binary(currCommand->sourceAddressingMode, sourceAddressingMode, 3);
-    convert_to_binary(currCommand->opcode, opcode, 4);
-    convert_to_binary(currCommand->destAddressingMode, destAddressingMode, 3);
+    char destAM[4];
 
-    fprintf(obFile, "%s%s%s%s\n", sourceAddressingMode, opcode, destAddressingMode, "00"); // 00 for ARE, need to change that
+    memset(sourceAM, 0, sizeof(sourceAM));
+    memset(opcode, 0, sizeof(opcode));
+    memset(destAM, 0, sizeof(destAM));
+
+    convert_to_binary(operationn->sourceAM, sourceAM, 3);
+    convert_to_binary(operationn->opcode, opcode, 4);
+    convert_to_binary(operationn->destAM, destAM, 3);
+
+    fprintf(obFile, "%s%s%s%s\n", sourceAM, opcode, destAM, "00"); // 00 for ARE, need to change that
+    fclose(obFile);
+
     return 0;
 }
 
-int analyse_operand(command* currCommand, char* token, int lineNum){
-    currCommand->sourceAddressingMode = get_operand_type(&(currCommand->sourceOperand), token, lineNum);
-    currCommand->destAddressingMode = get_operand_type(&(currCommand->destOperand), token, lineNum);
-    write_first_word(currCommand);
+int is_instruction_operation(char* opname){
+
+    if (strcmp(opname, "mov") == 0)
+        return Mov;
+    else if (strcmp(opname, "cmp"))
+        return Cmp;
+    else if (strcmp(opname, "add") == 0)
+        return Add;
+    else if (strcmp(opname, "sub") == 0)
+        return Sub;
+    else if (strcmp(opname, "lea") == 0)
+        return Lea;
+    else if (strcmp(opname, "clr") == 0)
+        return Clr;
+    else if (strcmp(opname, "not") == 0)
+        return Not;
+    else if (strcmp(opname, "inc") == 0)
+        return Inc;
+    else if (strcmp(opname, "dec") == 0)
+        return Dec;
+    else if (strcmp(opname, "jmp") == 0)
+        return Jmp;
+    else if (strcmp(opname, "bne") == 0)
+        return Bne;
+    else if (strcmp(opname, "red") == 0)
+        return Red;
+    else if (strcmp(opname, "prn") == 0)
+        return Prn;
+    else if (strcmp(opname, "jsr") == 0)
+        return Jsr;
+    else if (strcmp(opname, "rts") == 0)
+        return Rts;
+    else if (strcmp(opname, "stop") == 0)
+        return Stop;
+
+    return FALSE;
 }
 
-int is_instruction_operation(label* labelTable, char* token, char labelName[], int* labelIndex, int isLabel, int lineNum){
-    command currCommand;
+int string_handler(char* stringLine, int* stringConverted, int lineNum){
+    int i;
 
-    if (isLabel == 1)
-        add_label(labelTable, labelName, Instruction, lineNum, labelIndex);
-
-    if (strcmp(token, "mov") == 0)
-        currCommand.opcode = Mov;
-    else if (strcmp(token, "cmp"))
-        currCommand.opcode = Cmp;
-    else if (strcmp(token, "add") == 0)
-        currCommand.opcode = Add;
-    else if (strcmp(token, "sub") == 0)
-        currCommand.opcode = Sub;
-    else if (strcmp(token, "lea") == 0)
-        currCommand.opcode = Lea;
-    else if (strcmp(token, "clr") == 0)
-        currCommand.opcode = Clr;
-    else if (strcmp(token, "not") == 0)
-        currCommand.opcode = Not;
-    else if (strcmp(token, "inc") == 0)
-        currCommand.opcode = Inc;
-    else if (strcmp(token, "dec") == 0)
-        currCommand.opcode = Dec;
-    else if (strcmp(token, "jmp") == 0)
-        currCommand.opcode = Jmp;
-    else if (strcmp(token, "bne") == 0)
-        currCommand.opcode = Bne;
-    else if (strcmp(token, "red") == 0)
-        currCommand.opcode = Red;
-    else if (strcmp(token, "prn") == 0)
-        currCommand.opcode = Prn;
-    else if (strcmp(token, "jsr") == 0)
-        currCommand.opcode = Jsr;
-    else if (strcmp(token, "rts") == 0)
-        currCommand.opcode = Rts;
-    else if (strcmp(token, "stop") == 0)
-        currCommand.opcode = Stop;
-    else
-        return error_handler(No_Valid_Operation, lineNum);
-
-    analyse_operand(&currCommand, token, lineNum);
-    return 0;
-}
-
-int string_handler(char* stringLine, int lineNum){
-    if (stringLine[0] != '\"' && stringLine[strlen(stringLine)-1] != '\"')
-        return error_handler();
+    if (stringLine[0] != '\"' && stringLine[strlen(stringLine)-1] != '\"'){
+        stringConverted[0] = error_handler();
+        return TRUE;
+    }
 
     stringLine++;
     stringLine[-1] = '\0'; // this line might cause problem: i need to check if it wont cause problem and if its even ok to do like that.
     stringLine[strlen(stringLine)-1] = '\0'; 
 
-    int stringConverted[strlen(stringLine)+1], i;
     for (i = 0; i < strlen(stringLine); i++)
         stringConverted[i] = stringLine[i];
     stringConverted[i] = 0;
-    write_data_to_file(stringConverted, strlen(stringLine)+1, lineNum);
+
+    return i+1;
+    // write_data(stringConverted, strlen(stringLine)+1, lineNum);
 }
 
-/* NOTE: add_label is called from here, but it might be more organized and right to call it from the input_handler function.*/ 
-int is_guidance_operation(label* labelTable, char* token, char labelName[], int* labelIndex, int isLabel, int lineNum){
-    if (strcmp(token, ".data") == 0){
-        if (isLabel == 1)
-            add_label(labelTable, labelName, Data, lineNum, labelIndex); /* add the label to the label table, using DC, if the label already exists, print error */
-        
-        token = strtok(NULL, DELIMITERS);
-        data_handler(token, lineNum);
-        /* זהה את סוג הנתונים, קודד אותם בזיכרון, עדכן את מונה הנתונים דכ בהתאם לאורכם */
-        return 1;
-    }
-    else if (strcmp(token, ".string") == 0){
-        if (isLabel == 1)
-            add_label(labelTable, labelName, Data, lineNum, labelIndex);
+int data_handler(char** dataLine, int* params, int lineNum){
+    char* toCheck;
+    int commaCnt, paramCnt;
 
-        token = strtok(NULL, DELIMITERS);
-        string_handler(token, lineNum); // this might cause problems because im passing token and modifying it in the function, could be affcting token in the main function.
-        return 0;
+    paramCnt = commaCnt = 0;
+
+    /* remove_spaces(dataLine);
+    toCheck = replace_commas(dataLine); */
+
+    /* token = strtok(toCheck, " "); */
+    // params = (int*)calloc(paramCnt, sizeof(int)); // maybe allocate outside of the function? 
+
+    while (*dataLine != NULL){
+        if (**dataLine != ','){
+            paramCnt++;
+            if(strspn(*dataLine, "-+0123456789") == strlen(*dataLine)){
+                params = (int*)realloc(params, sizeof(int) * paramCnt);
+                params[paramCnt-1] = atoi(*dataLine);
+            }
+            else
+                return error_handler(); // input isnt a number
+        }
+        else
+            commaCnt++;
+
+        *dataLine = strtok(NULL, DELIMITERS);
     }
-    else if (strcmp(token, ".extern") == 0){
-        token = strtok(NULL, DELIMITERS);
-        while (token != NULL){
-            add_label(labelTable, token, Extern, lineNum, labelIndex); /* add the label to the label table, using IC, if the label already exists, print error */
-            token = strtok(NULL, DELIMITERS);
-        }    
+
+    return paramCnt;
+}
+
+int write_data(int* params, int paramCnt, int lineNum){
+    int i;
+    FILE* obFile;
+    
+    if (*params == -1)
+        return FALSE;
+    
+    obFile = open_file("prog", ".ob", "a");
+    if (obFile == NULL) {
+        printf("Failed to open prog.ob for writing!\n");
+        return error_handler();
+    }
+
+    for (i = 0; i < paramCnt; i++) {
+        char binary[13];  // 12 binary digits + 1 null terminator
+        convert_to_binary(params[i], binary, 12);
+        fprintf(obFile, "%s\n", binary);
+    }
+
+    fclose(obFile);
+    return TRUE;
+}
+
+int call_data_analyzer(char** token, int* convertedData, int commandCode, int lineNum){
+    if (commandCode == _DATA)
+        return data_handler(token, convertedData, lineNum);
+    else if (commandCode == _STRING)
+        return string_handler(*token, convertedData, lineNum);
+    else if (commandCode == _EXTERN)
+        add_extern_labels();
+    else if (commandCode == _ENTRY)
         return 1;
-    }
-    else if (strcmp(token, ".entry") == 0){
-        return 1;
-    }
+    else
+        return FALSE;
+    return TRUE;
+}
+/* NOTE: add_label is called from here, but it might be more organized and right to call it from the input_handler function.*/ 
+int is_guidance_operation(char* operation){
+    if (strcmp(operation, ".data") == 0)
+        return _DATA;
+    else if (strcmp(operation, ".string") == 0)
+        return _STRING;
+    else if (strcmp(operation, ".extern") == 0)    
+        return _EXTERN;
+    else if (strcmp(operation, ".entry") == 0)
+        return _ENTRY;
     return 0; 
 }
 
-int is_label(char** token, char labelName[], char originalLine[]){
-    *token = strtok(originalLine, DELIMITERS);
-    strcpy(labelName, *token);
+int is_label(char** token, char labelName[MAX_LABEL_LENGTH], char line[MAX_LINE_LENGTH]){
 
-    if (LAST_CHARACTER(labelName) == ':'){
-        LAST_CHARACTER(labelName) = '\0';
+    if (LAST_CHARACTER(*token) == ':'){
+        LAST_CHARACTER(*token) = '\0';
+        strcpy(labelName, *token);
         *token = strtok(NULL, DELIMITERS);
         return 1;
     }
     return 0;
 }
 
-/*the core of the first pass. This function*/
-int input_handler(){
-    FILE* amFile;
-    label* labelTable;
+FILE* open_file(char* filename, char* ending, char* mode){
+    char foo[MAX_FILENAME_LENGTH]; // add max for file extension as well
 
-    char* token;
-    char labelName[MAX_LABEL_LENGTH];
-    char originalLine[MAX_LINE_LENGTH], line[MAX_LINE_LENGTH];
-    int labelIndex;
-    int lineNum, isLabel;
-    int DC, IC;
+    strcpy(foo, filename);
+    strcat(foo, ending);
+    FILE* file = fopen(foo, mode); // change that "a" to mode when done testing
 
-    DC = IC = 0;
-    lineNum = 0;
-    labelIndex = -1;
-    
-    amFile = fopen("result.am", "r");
-    labelTable = (label*)malloc(sizeof(label*));
+    return file;
+}
 
-    while (fgets(originalLine, MAX_LINE_LENGTH, amFile)){
-        lineNum++;
-        strcpy(line, originalLine);
+/*manager function. its job is to read from the input file, and report any errors that arise.*/
+int read_input_file(FILE** sourceFile, char* filename, char ending[3], char line[MAX_LINE_LENGTH], int* lineNum){
+    if (*lineNum == 0)    
+        *sourceFile = open_file(filename, ending, "r"); 
 
-        isLabel = is_label(&token, labelName, originalLine);
-        if (is_guidance_operation(labelTable, token, labelName, &labelIndex, isLabel, lineNum) != 1){
-            if (is_instruction_operation(labelTable, token, labelName, &labelIndex, isLabel, lineNum) != 1){
-                error_handler();
-            }
-        }
+    if (*sourceFile == NULL)
+        return error_handler();
+
+    if (fgets(line, MAX_LINE_LENGTH, *sourceFile) != NULL){
+        (*lineNum)++;
+        return 1;
     }
-    fclose(amFile);
+
     return 0;
 }
 
-int main(){
-    input_handler();
-    return 0;
+int first_pass_invoker(FILE** amFile, label** labelTable, char* filename, int* dc, int* ic){
+    char* token;
+    char line[MAX_LINE_LENGTH], originalLine[MAX_LINE_LENGTH];
+    char labelName[MAX_LABEL_LENGTH];
+    int isLabel;
+    int labelCount;
+    int commandCode;
+    int lineNum;
+
+    *dc = *ic = labelCount = lineNum = 0;
+
+    while (read_input_file(amFile, filename,".am", originalLine, &lineNum) == 1){
+        strcpy(line, originalLine);
+        token = strtok(line, DELIMITERS);
+        isLabel = is_label(&token, labelName, line);
+
+        if ((commandCode = is_guidance_operation(token)) != FALSE){
+            int* convertedData;
+            int paramCnt;
+            convertedData = (int*)calloc(1, sizeof(int)); // move this to a different function
+
+            token = strtok(NULL, DELIMITERS);
+            paramCnt = call_data_analyzer(&token, convertedData, commandCode, lineNum); /* calls the data analyzer depending on the guidance operation */
+            write_data(convertedData, paramCnt, lineNum); // might be a problem here becasue of sizeof() on pointer and not array
+        }
+        else if ((commandCode = is_instruction_operation(token)) != -1){
+            operation operationn;
+
+            operationn.opcode = commandCode;
+            operationn.sourceAM = get_operand_type(&(operationn.sourceOperand), token, lineNum);
+            operationn.destAM = get_operand_type(&(operationn.destOperand), token, lineNum);
+
+            write_first_word(&operationn);
+            write_operand_word();
+        }
+        else
+            return error_handler();
+
+        if (commandCode != -1 && isLabel == TRUE)
+            add_label(labelTable, labelName, &labelCount, 0, lineNum);
+    }
+    // close files
+    // free memory
+    return TRUE;
+}
+// labels, ic dc, errors
+int main() {
+    FILE* amFile;
+    label* labelTable;
+    char filename[MAX_FILENAME_LENGTH];
+    int dc, ic;
+
+    labelTable = (label*)malloc(sizeof(label));
+
+    strcpy(filename, "result");
+    first_pass_invoker(&amFile, &labelTable, filename, &dc, &ic);
+
+    // close files
+    // free memory
 }

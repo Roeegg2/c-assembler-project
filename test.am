@@ -8,5 +8,7 @@ L1: inc K
 bne LOOP
 END: stop
 STR: .string “abcdef”
+thiscode!!!
 LENGTH: .data 6,-9,15
+thiscode!!!
 K: .data 22

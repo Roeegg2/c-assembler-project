@@ -1,6 +1,3 @@
-hello: mov 5,@r6
-label3: .data 1,2,3,4
-ok: .string "ok"
-ok1: .string "ok"
-ok2: .string "ok"
-ok3: .string "ok"
+mov @r1,@r6
+label: .data 6
+string: .string "hello"

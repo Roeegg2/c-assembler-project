@@ -1,9 +1,3 @@
-/**
- * NOTES:
- * Things left to implement:
- * 1.  
-*/
-
 #include "firstpass.h"
 
 /*------------------------------------------------------------- FUNCTIONS NOT IN USE RIGHT NOW, BUT NEED LATER ----------------------------------*/
@@ -78,7 +72,8 @@ int convert_to_binary(char binary[], int number, int size){
 
     memset(binary, 0, size+1);
     isNegative = (number < 0) ? 1 : 0;
-    abs(number);    
+    if (isNegative == 1)
+        number *= -1;    
 
     int i = size - 1;
     while (number > 0) {
@@ -92,16 +87,39 @@ int convert_to_binary(char binary[], int number, int size){
         i--;
     }
 
-    if (isNegative == 1)
+    if (isNegative == 1){
         flip_negative(binary);
+        add_one(binary);
+    }
     return 0;
 }
 
+// make this nicer 
 int flip_negative(char binary[]){
     int i;
+    // flipping all bits 
     for (i = 0; i < strlen(binary); i++)
         binary[i] = (binary[i] == '0') ? '1' : '0';
-    return 0;
+   
+    return TRUE;
+}
+
+int add_one(char binary[]){
+    int carry, i;
+    carry = 1;
+    i = strlen(binary) - 1;
+    
+    // adding one 
+    while (carry == 1 && i >= 0) {
+        if (binary[i] == '0') {
+            binary[i] = '1';
+            carry = 0;
+        } 
+        else
+            binary[i] = '0';
+        i--;
+    }    
+    return TRUE;
 }
 
 int add_label(label** labelTable, char labelName[], int* labelCount, int counterValue, int type, int lineNum){
@@ -114,12 +132,13 @@ int add_label(label** labelTable, char labelName[], int* labelCount, int counter
     
     strcpy((*labelTable)[*labelCount].name, labelName);
     (*labelTable)[*labelCount].line = lineNum;
-    (*labelTable)[*labelCount].cnt.type = 0;
-    (*labelTable)[*labelCount].cnt.value = counterValue; /*change that to a pointer outside of the function*/
+    (*labelTable)[*labelCount].cnt.counterType = 0;
+    (*labelTable)[*labelCount].cnt.address = counterValue; /*change that to a pointer outside of the function*/
     (*labelCount)++;
     return 0;
 }
 
+/* is direct immidiate and register actually a way to differenetiate them?? */
 int get_operand_type(operand* op, char* token, int lineNum){
     char foo[1];
 
@@ -139,16 +158,15 @@ int get_operand_type(operand* op, char* token, int lineNum){
         }
         // return error
     }
-
+    /* if its nothing else, its a label */
     strcpy(op->label, token);
     return Direct;
 }
 
-int write_first_word(operation* operationn, int* ic){
+int write_first_word(char*** operationArray, operation* operationn, int* ic){
     FILE* obFile;
-
-    obFile = open_file("prog", ".ob", "a");
- 
+    
+    char binary[13];  // 12 binary digits + 1 null terminator
     char sourceAM[4];
     char opcode[5];
     char destAM[4];
@@ -156,11 +174,14 @@ int write_first_word(operation* operationn, int* ic){
     convert_to_binary(sourceAM, operationn->sourceAM, 3);
     convert_to_binary(opcode, operationn->opcode, 4);
     convert_to_binary(destAM, operationn->destAM, 3);
+    
+    memset(binary, '\0', 13);
+    strcat(binary, sourceAM);
+    strcat(binary, opcode);
+    strcat(binary, destAM);
+    strcat(binary, "00");
 
-    fprintf(obFile, "%s%s%s%s\n", sourceAM, opcode, destAM, "00"); // 00 for ARE, need to change that
-
-    (*ic)++;
-    fclose(obFile);
+    add_to_counterArray(operationArray, ic, binary);
 
     return 0;
 }
@@ -229,8 +250,8 @@ int data_handler(char** dataLine, int* params, int lineNum){
 
     paramCnt = commaCnt = 0;
 
-    /* remove_spaces(dataLine);
-    toCheck = replace_commas(dataLine); */
+/*     remove_spaces(*dataLine);
+    toCheck = replace_commas(*dataLine); */
 
     /* token = strtok(toCheck, " "); */
     // params = (int*)calloc(paramCnt, sizeof(int)); // maybe allocate outside of the function? 
@@ -251,17 +272,25 @@ int data_handler(char** dataLine, int* params, int lineNum){
         *dataLine = strtok(NULL, DELIMITERS);
     }
 
+/*     if (paramCnt - commaCnt != 1)
+        return error_handler(); */
     return paramCnt;
 }
 
-int write_data(int* params, int* dc, int paramCnt, int lineNum){
+int add_to_counterArray(char*** counterArray, int* counter, char* toAdd){
+    (*counterArray) = (char**)realloc((*counterArray), sizeof(char*) * (*counter+1));
+    (*counterArray)[*counter] = (char*)malloc(sizeof(char) * (strlen(toAdd)+1));
+
+    strcpy((*counterArray)[*counter], toAdd);
+    (*counter)++;
+
+    return TRUE;
+}
+
+int write_data(char*** dataArray, int* params, int* dc, int paramCnt, int lineNum){
     int i;
     FILE* obFile;
     
-    if (*params == -1)
-        return FALSE;
-    
-    obFile = open_file("prog", ".ob", "a");
     if (obFile == NULL) {
         printf("Failed to open prog.ob for writing!\n");
         return error_handler();
@@ -270,12 +299,9 @@ int write_data(int* params, int* dc, int paramCnt, int lineNum){
     for (i = 0; i < paramCnt; i++) {
         char binary[13];  // 12 binary digits + 1 null terminator
         convert_to_binary(binary, params[i], 12);
-        fprintf(obFile, "%s\n", binary);
+        add_to_counterArray(dataArray, dc, binary);
+        /* fprintf(obFile, "%s\n", binary); */
     }
-
-    (*dc)++;
-    fclose(obFile);
-
     return TRUE;
 }
 
@@ -306,13 +332,14 @@ int is_guidance_operation(char* operation){
 }
 
 int is_label(char** token, char labelName[MAX_LABEL_LENGTH], char line[MAX_LINE_LENGTH]){
-
     if (LAST_CHARACTER(*token) == ':'){
         LAST_CHARACTER(*token) = '\0';
         strcpy(labelName, *token);
         *token = strtok(NULL, DELIMITERS);
         return 1;
     }
+    if (is_guidance_operation(labelName) != FALSE || is_instruction_operation(labelName) != FALSE)
+        return error_handler();
     return 0;
 }
 
@@ -353,43 +380,42 @@ int get_type(operand* operandd, int addressingMode){
     return No_Operand;
 }
 
-// need to change it do it prints the parameters in the right order, since sometimes dest comes before source
-int write_operand_word(operation* operationn, char* filename,  int* ic){
+// write more neatly
+// keep an eye out of the parameter writing order
+// note: make sure indeed the 2 words are combined only when the addressing modes are both register
+int write_operand_words(char*** operationArray, operation* operationn, char* filename,  int* ic){
     FILE* obFile;
-    int sourceVal, destVal, size;
+    int sourceVal, destVal, size, i;
+    char binary[12];  // 12 binary digits + 1 null terminator
 
-    obFile = fopen("prog.ob", "a");
-    // obFile = open_file(filename, ".ob", "a");
     sourceVal = get_type(&(operationn->sourceOperand), operationn->sourceAM);
     destVal = get_type(&(operationn->destOperand), operationn->destAM);
 
-    if (operationn->sourceAM == operationn->destAM && operationn->sourceAM != Direct)
-        size = 6;
-    else
-        size = 11;
+    if (operationn->sourceAM == operationn->destAM && operationn->sourceAM == Register){
+        convert_to_binary(binary, sourceVal, 5);
+        convert_to_binary(binary+5, destVal, 5);
+        strcat(binary, "00"); // might not work sometime maybe? need to check this 
 
-    char binarySource[size];
-    char binaryDest[size];
-
-    convert_to_binary(binarySource, sourceVal, size-1);
-    convert_to_binary(binaryDest, destVal, size-1);
-
-    if (size == 6){
-        fprintf(obFile, "%s%s%s\n", binarySource, binaryDest, "00");
-        (*ic)++;
+        add_to_counterArray(operationArray, ic, binary);
     }
-    else{
-        fprintf(obFile, "%s%s\n%s%s\n", binarySource, "00", binaryDest, "00");
-        (*ic) += 2;
+    else {
+        convert_to_binary(binary, sourceVal, 10); /*add source*/
+        strcat(binary, "00");
+        add_to_counterArray(operationArray, ic, binary);
+
+        convert_to_binary(binary, destVal, 10); /*add destenation*/
+        strcat(binary, "00");
+        add_to_counterArray(operationArray, ic, binary);
     }
-    fclose(obFile);
+
     return TRUE;
 }
 
-int first_pass_invoker(FILE** amFile, label** labelTable, char* filename, int* dc, int* ic){
+int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile, label** labelTable, char* filename, int* dc, int* ic){
     char* token;
     char line[MAX_LINE_LENGTH], originalLine[MAX_LINE_LENGTH];
     char labelName[MAX_LABEL_LENGTH];
+    int* counterPtr;
     int isLabel;
     int labelCount;
     int commandCode;
@@ -409,10 +435,8 @@ int first_pass_invoker(FILE** amFile, label** labelTable, char* filename, int* d
 
             token = strtok(NULL, DELIMITERS);
             paramCnt = call_data_analyzer(&token, convertedData, commandCode, lineNum); /* calls the data analyzer depending on the guidance operation */
-            write_data(convertedData, dc, paramCnt, lineNum); // might be a problem here becasue of sizeof() on pointer and not array
-
-            if (commandCode != -1 && isLabel == TRUE)
-                add_label(labelTable, labelName, &labelCount, *dc, TYP_DC, lineNum);
+            write_data(dataArray, convertedData, dc, paramCnt, lineNum);
+            counterPtr = dc;
         }
         else if ((commandCode = is_instruction_operation(token)) != -1){
             operation operationn;
@@ -421,33 +445,56 @@ int first_pass_invoker(FILE** amFile, label** labelTable, char* filename, int* d
             operationn.sourceAM = get_operand_type(&(operationn.sourceOperand), token, lineNum);
             operationn.destAM = get_operand_type(&(operationn.destOperand), token, lineNum);
 
-            write_first_word(&operationn, ic);
-            write_operand_word(&operationn, filename, ic);
+            write_first_word(operationArray, &operationn, ic);
+            write_operand_words(operationArray, &operationn, filename, ic);
 
-            if (commandCode != -1 && isLabel == TRUE)
-                add_label(labelTable, labelName, &labelCount, *ic, TYP_IC, lineNum);
+            counterPtr = ic;
         }
         else
             return error_handler();
     }
+
+    if (commandCode != -1 && isLabel == TRUE)
+        add_label(labelTable, labelName, &labelCount, *counterPtr, TYP_IC, lineNum);
+
     // close files
     // free memory
     return TRUE;
 }
 
 // labels, ic dc, errors
-int main() {
+int main(int argc, char** argv){
     FILE* amFile;
     label* labelTable;
     char filename[MAX_FILENAME_LENGTH];
     int dc, ic;
+    char** dcArray; 
+    char** icArray;
 
-    labelTable = (label*)malloc(sizeof(label));
+    int i;
+    for (i = 1; i < argc; i++){
+        strcpy(filename, argv[i]);
+        
+        dcArray = (char**)malloc(sizeof(char*));
+        icArray = (char**)malloc(sizeof(char*));
+        labelTable = (label*)malloc(sizeof(label));
 
-    strcpy(filename, "result");
-    first_pass_invoker(&amFile, &labelTable, filename, &dc, &ic);
+        first_pass_invoker(&dcArray, &icArray, &amFile, &labelTable, filename, &dc, &ic);
 
+        printf("data words:\n");
+        PRINTWORDS(dcArray, dc);
+        printf("instructions words:\n");
+        PRINTWORDS(icArray, ic);
+    }
     // close files
     // free memory
     
+}
+/*-------------------------------------------------- TESTING FUNCTIONS --------------------------------------------*/
+
+int PRINTWORDS(char** counterArray, int counter){
+    int i;
+    for (i = 0; i < counter; i++)
+        printf("%s\n", counterArray[i]);
+    return 0;
 }

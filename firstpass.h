@@ -75,9 +75,12 @@ int is_label(char** token, char labelName[MAX_LABEL_LENGTH], char line[MAX_LINE_
 FILE* open_file(char* filename, char* ending, char* mode);
 int read_input_file(FILE** sourceFile, char* filename, char ending[3], char line[MAX_LINE_LENGTH], int* lineNum);
 int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile, label** labelTable, char* filename, int* dc, int* ic);
-int write_operand_word(char*** operationArray, operation* operationn, char* filename,  int* ic);
-int get_type(operand* operandd, int addressingMode);
+int add_operand_words(char*** operationArray, label** labelTable, operation* operationn, int* ic, int labelCount);
+int get_type_val(label** labelTable, operand* operandd, int* val, int labelCount, int addressingMode);
 int flip_negative(char binary[]);
 int add_to_counterArray(char*** counterArray, int* counter, char* toAdd);
 int PRINTWORDS(char** counterArray, int counter);
 int add_one(char binary[]);
+int get_combined_word(char* binary, int sourceVal, int destVal);
+int get_one_word(char* binary, int val);
+int find_label(label** labelTable, char* labelName, int labelCount);

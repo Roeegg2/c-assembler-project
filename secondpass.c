@@ -30,8 +30,40 @@ FILE* open_file(char* filename, char* ending, char* mode){
     return file;
 }
 
+int print_data(char** data, int dc){
+    int i;
+    for (i = 0; i < dc; i++){
+        printf("%s\n", data[i]);
+    }
+}
 
+int print_instructions(char** array, label* labelTable, char* filename, int ic){
+    FILE* obFile;
+    char binary[13];
+    int i, labelAddress;
 
+    obFile = open_file(filename, ".ob", "a+");
+
+    for (i = 0; i < ic; i++){
+        if (*(array[i]) == 'l') { //NOTE FOR FIRSTPASS: add the 'l' character to each label added to the array 
+            labelAddress = find_label(array[i], labelTable);
+
+            if (labelAddress != FALSE){
+                get_one_word(binary, labelAddress);
+                array[i] = (char*)realloc((*array), sizeof(char) * (strlen(binary)+1));
+                strcpy(array[i], binary);
+            }
+            else{
+                printf("Error: label %s not found\n", array[i]);
+                return 0;
+            }
+        }
+        else{
+            fprintf(obFile, "%s\n", array[i]);
+        }
+    }
+    return 1;
+}
 
 int main(int argc, char** argv){
     FILE* amFile;

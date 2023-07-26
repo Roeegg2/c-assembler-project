@@ -126,14 +126,13 @@ int add_label(label** labelTable, char labelName[], int* labelCount, int counter
     int i;
     (*labelTable) = (label*)realloc((*labelTable), sizeof(label) * ((*labelCount)+1));
 
-    for (i = 0; i <= *labelCount; i++)
-        if (strcmp((*labelTable)[i].name, labelName) == 0)
-            return error_handler();
+    if (find_label(labelTable, labelName, *labelCount) != FALSE)
+        return error_handler();
     
     strcpy((*labelTable)[*labelCount].name, labelName);
     (*labelTable)[*labelCount].line = lineNum;
     (*labelTable)[*labelCount].cnt.counterType = 0;
-    (*labelTable)[*labelCount].cnt.address = counterValue; /*change that to a pointer outside of the function*/
+    (*labelTable)[*labelCount].cnt.address = counterValue+100; /*change that to a pointer outside of the function*/
     (*labelCount)++;
     return 0;
 }
@@ -369,44 +368,96 @@ int read_input_file(FILE** sourceFile, char* filename, char ending[3], char line
     return 0;
 }
 
-int get_type(operand* operandd, int addressingMode){
+int get_type_val(label** labelTable, operand* operandd, int* val, int labelCount, int addressingMode){
     if (addressingMode == Immidiate)
-        return operandd->value;
-    else if (addressingMode == Direct)
-        return -1; // this is label! handle this
+        *val = operandd->value;
+    else if (addressingMode == Direct){
+        *val = find_label(labelTable, operandd->label, labelCount); // this is label! handle this
+        return Direct;
+    }
     else if (addressingMode == Register)
-        return operandd->regNum;
+        *val = operandd->regNum;
 
     return No_Operand;
 }
 
-// write more neatly
-// keep an eye out of the parameter writing order
-// note: make sure indeed the 2 words are combined only when the addressing modes are both register
-int write_operand_words(char*** operationArray, operation* operationn, char* filename,  int* ic){
-    FILE* obFile;
-    int sourceVal, destVal, size, i;
-    char binary[12];  // 12 binary digits + 1 null terminator
+int find_label(label** labelTable, char* labelName, int labelCount){
+    int i;
 
-    sourceVal = get_type(&(operationn->sourceOperand), operationn->sourceAM);
-    destVal = get_type(&(operationn->destOperand), operationn->destAM);
+    for (i = 0; i < labelCount; i++)
+        if (strcmp((*labelTable)[i].name, labelName) == 0)
+            return (*labelTable)[i].cnt.address;
+
+    return FALSE;
+}
+
+// adds the operand words to the operation array
+int add_operand_words(char*** operationArray, label** labelTable, operation* operationn, int* ic, int labelCount){
+    char binary[13]; /* 12 binary digits + 1 null terminator */
+    int sourceVal, destVal;
+    int writeSource = TRUE; 
+    int writeDest = TRUE;
+
+    if (get_type_val(labelTable, &(operationn->sourceOperand), &sourceVal, labelCount, operationn->sourceAM) == Direct){
+        if (sourceVal == FALSE){
+            add_to_counterArray(operationArray, ic, operationn->sourceOperand.label);
+            writeSource = FALSE;
+        }
+        else{
+            get_one_word(binary, sourceVal);
+            add_to_counterArray(operationArray, ic, binary);
+            writeSource = FALSE;
+        }
+        printf("%d\n", sourceVal);
+    }
+    if (get_type_val(labelTable, &(operationn->destOperand), &destVal, labelCount, operationn->destAM) == Direct){
+        if (destVal == FALSE){
+            add_to_counterArray(operationArray, ic, operationn->destOperand.label);
+            writeDest = FALSE;
+        }
+        else{
+            get_one_word(binary, destVal);
+            add_to_counterArray(operationArray, ic, binary);
+            writeDest = FALSE;
+        }
+        // printf("%d\n", destVal);
+    }
 
     if (operationn->sourceAM == operationn->destAM && operationn->sourceAM == Register){
-        convert_to_binary(binary, sourceVal, 5);
-        convert_to_binary(binary+5, destVal, 5);
-        strcat(binary, "00"); // might not work sometime maybe? need to check this 
-
+        get_combined_word(binary, sourceVal, destVal);
         add_to_counterArray(operationArray, ic, binary);
     }
+
     else {
-        convert_to_binary(binary, sourceVal, 10); /*add source*/
-        strcat(binary, "00");
-        add_to_counterArray(operationArray, ic, binary);
-
-        convert_to_binary(binary, destVal, 10); /*add destenation*/
-        strcat(binary, "00");
-        add_to_counterArray(operationArray, ic, binary);
+        if (writeSource == TRUE){
+            get_one_word(binary, sourceVal);
+            add_to_counterArray(operationArray, ic, binary);            
+        }
+        if (writeDest == TRUE){
+            get_one_word(binary, destVal);
+            add_to_counterArray(operationArray, ic, binary);            
+        }
     }
+
+    return TRUE;
+}
+
+int get_combined_word(char* binary, int sourceVal, int destVal){
+    memset(binary, '\0', 13);
+
+    convert_to_binary(binary, sourceVal, 5);
+    convert_to_binary(binary+5, destVal, 5);
+    strcat(binary, "00"); // might not work sometime maybe? need to check this 
+
+    return TRUE;
+}
+
+int get_one_word(char* binary, int val){
+    memset(binary, '\0', 13);
+    /* if (no operand)
+	    return; */
+    convert_to_binary(binary, val, 10);
+    strcat(binary, "00");
 
     return TRUE;
 }
@@ -446,16 +497,16 @@ int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile,
             operationn.destAM = get_operand_type(&(operationn.destOperand), token, lineNum);
 
             write_first_word(operationArray, &operationn, ic);
-            write_operand_words(operationArray, &operationn, filename, ic);
+            add_operand_words(operationArray, labelTable, &operationn, ic, labelCount);
 
             counterPtr = ic;
         }
         else
             return error_handler();
-    }
 
-    if (commandCode != -1 && isLabel == TRUE)
-        add_label(labelTable, labelName, &labelCount, *counterPtr, TYP_IC, lineNum);
+        if (commandCode != -1 && isLabel == TRUE)
+            add_label(labelTable, labelName, &labelCount, *counterPtr, TYP_IC, lineNum);
+    }
 
     // close files
     // free memory

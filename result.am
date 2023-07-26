@@ -1,3 +1,0 @@
-mov @r1,@r6
-label: .data 6
-string: .string "hello"

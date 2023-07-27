@@ -493,7 +493,7 @@ int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile,
             operationn.opcode = commandCode;
 
             get_param_sequence(paramsequence, token, &(operationn.sourceAM), &(operationn.destAM), lineNum);
-            get_param_value();
+            get_param_value(); // get the value of each parameter
 
             write_first_word(operationArray, &operationn, ic);
             add_operand_words(operationArray, labelTable, &operationn, ic, *labelCount);
@@ -512,26 +512,40 @@ int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile,
     return TRUE;
 }
 
-int get_param_value(operand* op, char* token, int lineNum){
-    
+int add_operand_value(operator* operatorr, char addressingMode, int paramVal){
+    if (addressingMode == '1'){
+        operatorr->value = paramVal;
+    }
+    else if (addressingMode == '3'){
+        operatorr->regNum = paramVal;
+    }
+    else if (addressingMode == '5'){
+        operatorr->regNum = paramVal;
+    }
+    else {
+
+    }
 }
 
-int get_param_sequence(char* paramsequence, char* token, int* sourceAM, int* destAM, int lineNum){
-    paramsequence[0] = get_operand_type(token, lineNum);
-    paramsequence[1] = get_operand_type(token, lineNum);
+int get_param_sequence(operation* operationn, char* paramsequence, char* token, int lineNum){
+    int param1val, param2val;
+
+    paramVal1 = get_operand_type(token, lineNum, paramsequence[0]);
+    paramVal2 = get_operand_type(token, lineNum, paramsequence[1]);
 
     if (paramsequence[0] == '0' && paramsequence[1] == '0') /*no operands*/
-	    *sourceAM = *destAM = 0; 
+	    operationn->sourceAM = opreationn->destAM = 0; 
 
     else if (paramsequence[0] != '0' && paramsequence[0] != '0'){ /*2 operands*/
-	    *sourceAM = CHAR_TO_INT(paramsequence[0]);
-	    *destAM = CHAR_TO_INT(paramsequence[1]);
+	    operationn->sourceAM = CHAR_TO_INT(paramsequence[0]);
+	    operationn->destAM = CHAR_TO_INT(paramsequence[1]);
     }
     else { /*1 operand*/
-	    *sourceAM = 0;
-	    *destAM = CHAR_TO_INT(paramsequence[0]);
+	    operationn->sourceAM = 0;
+        operationn->destAM = CHAR_TO_INT(paramsequence[0]);
     }
 
+    add_operand_value()
     return TRUE;
 }
 

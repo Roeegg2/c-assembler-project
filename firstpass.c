@@ -104,6 +104,7 @@ int flip_negative(char binary[]){
     return TRUE;
 }
 
+/*a helper function to add 1 to the the binary repressentation for negative numbers. Part of the 2's complement steps*/
 int add_one(char binary[]){
     int carry, i;
     carry = 1;
@@ -122,7 +123,7 @@ int add_one(char binary[]){
     return TRUE;
 }
 
-int add_label(label** labelTable, char labelName[], int* labelCount, int counterValue, int type, int lineNum){
+int add_label(label** labelTable, char labelName[], int* labelCount, int counterValue, int lineNum){
     int i;
     (*labelTable) = (label*)realloc((*labelTable), sizeof(label) * ((*labelCount)+1));
 
@@ -137,23 +138,6 @@ int add_label(label** labelTable, char labelName[], int* labelCount, int counter
     return 0;
 }
 
-/* is direct immidiate and register actually a way to differenetiate them?? */
-char get_operand_type(char* token, int lineNum){
-    char foo[1];
-
-    token = strtok(NULL, DELIMITERS);
-    if (token == NULL)
-        return '0'; // No_Operand
-    // not sure if can input + aswell, check that
-    else if (strspn(token, "+-012345678") == strlen(token))
-        return '1'; // Immidiate
-
-    else if (token[0] == '@' && token[1] == 'r')
-        return '5'; // Register
-
-    /* if its nothing else, its a label */
-    return '3'; // Direct
-}
 
 int write_first_word(char*** operationArray, operation* operationn, int* ic){
     FILE* obFile;
@@ -162,10 +146,11 @@ int write_first_word(char*** operationArray, operation* operationn, int* ic){
     char sourceAM[4];
     char opcode[5];
     char destAM[4];
-
-    convert_to_binary(sourceAM, operationn->sourceAM, 3);
+    
+    // working only when theres no second operator
+    convert_to_binary(sourceAM, operationn->sourceOperand->addrMode, 3);
     convert_to_binary(opcode, operationn->opcode, 4);
-    convert_to_binary(destAM, operationn->destAM, 3);
+    convert_to_binary(destAM, operationn->destOperand->addrMode, 3);
     
     memset(binary, '\0', 13);
     strcat(binary, sourceAM);
@@ -311,18 +296,18 @@ int call_data_analyzer(char** token, int* convertedData, int commandCode, int li
     return TRUE;
 }
 /* NOTE: add_label is called from here, but it might be more organized and right to call it from the input_handler function.*/ 
-int is_guidance_operation(char* operation){
-    if (strcmp(operation, ".data") == 0)
+int is_guidance_command(char* command){
+    if (strcmp(command, ".data") == 0)
         return _DATA;
-    else if (strcmp(operation, ".string") == 0)
+    else if (strcmp(command, ".string") == 0)
         return _STRING;
-    else if (strcmp(operation, ".extern") == 0)    
+    else if (strcmp(command, ".extern") == 0)    
         return _EXTERN;
-    else if (strcmp(operation, ".entry") == 0)
+    else if (strcmp(command, ".entry") == 0)
         return _ENTRY;
     return 0; 
 }
-
+  
 int is_label(char** token, char labelName[MAX_LABEL_LENGTH], char line[MAX_LINE_LENGTH]){
     if (LAST_CHARACTER(*token) == ':'){
         LAST_CHARACTER(*token) = '\0';
@@ -330,7 +315,7 @@ int is_label(char** token, char labelName[MAX_LABEL_LENGTH], char line[MAX_LINE_
         *token = strtok(NULL, DELIMITERS);
         return 1;
     }
-    if (is_guidance_operation(labelName) != FALSE || is_instruction_operation(labelName) != FALSE)
+    if (is_guidance_command(labelName) != FALSE || is_instruction_operation(labelName) != FALSE)
         return error_handler();
     return 0;
 }
@@ -361,19 +346,6 @@ int read_input_file(FILE** sourceFile, char* filename, char ending[3], char line
     return 0;
 }
 
-int get_type_val(label** labelTable, operand* operandd, int* val, int labelCount, int addressingMode){
-    if (addressingMode == Immidiate)
-        *val = operandd->value;
-    else if (addressingMode == Direct){
-        *val = find_label(*labelTable, operandd->label, labelCount); // this is label! handle this
-        return Direct;
-    }
-    else if (addressingMode == Register)
-        *val = operandd->regNum;
-
-    return No_Operand;
-}
-
 int find_label(label* labelTable, char* labelName, int labelCount){
     int i;
 
@@ -385,56 +357,8 @@ int find_label(label* labelTable, char* labelName, int labelCount){
 }
 
 // adds the operand words to the operation array
-int add_operand_words(char*** operationArray, label** labelTable, operation* operationn, int* ic, int labelCount){
-    char binary[13]; /* 12 binary digits + 1 null terminator */
-    int sourceVal, destVal;
-    int writeSource = TRUE; 
-    int writeDest = TRUE;
-
-    if (get_type_val(labelTable, &(operationn->sourceOperand), &sourceVal, labelCount, operationn->sourceAM) == Direct){
-        if (sourceVal == FALSE){
-            strcat(operationn->destOperand.label, "l");
-            add_to_counterArray(operationArray, ic, operationn->sourceOperand.label);
-            writeSource = FALSE;
-        }
-        else{
-            get_one_word(binary, sourceVal);
-            add_to_counterArray(operationArray, ic, binary);
-            writeSource = FALSE;
-        }
-/*         printf("%d\n", sourceVal); */
-    }
-    if (get_type_val(labelTable, &(operationn->destOperand), &destVal, labelCount, operationn->destAM) == Direct){
-        if (destVal == FALSE){
-            strcat(operationn->destOperand.label, "l");
-            add_to_counterArray(operationArray, ic, operationn->destOperand.label);
-            writeDest = FALSE;
-        }
-        else{
-            get_one_word(binary, destVal);
-            add_to_counterArray(operationArray, ic, binary);
-            writeDest = FALSE;
-        }
-        // printf("%d\n", destVal);
-    }
-
-    if (operationn->sourceAM == operationn->destAM && operationn->sourceAM == Register){
-        get_combined_word(binary, sourceVal, destVal);
-        add_to_counterArray(operationArray, ic, binary);
-    }
-
-    else {
-        if (writeSource == TRUE){
-            get_one_word(binary, sourceVal);
-            add_to_counterArray(operationArray, ic, binary);            
-        }
-        if (writeDest == TRUE){
-            get_one_word(binary, destVal);
-            add_to_counterArray(operationArray, ic, binary);            
-        }
-    }
-
-    return TRUE;
+int add_operand_words(){
+    return 0;
 }
 
 int get_combined_word(char* binary, int sourceVal, int destVal){
@@ -457,6 +381,52 @@ int get_one_word(char* binary, int val){
     return TRUE;
 }
 
+// done
+int set_operands(operation* operationn, operand* operand1, operand* operand2){
+    if (operand1->addrMode == 0 && operand2->addrMode == 0){
+        operationn->sourceOperand = NULL;
+        operationn->destOperand = NULL;
+    }
+    else if (operand1->addrMode != 0 && operand2->addrMode != 0){
+        operationn->sourceOperand = operand1;
+        operationn->destOperand = operand2;
+    }
+    else{
+        operationn->sourceOperand = NULL;
+        operationn->destOperand = operand1;
+    }
+    
+    return TRUE;
+}
+
+// done
+int get_param_value(operand* op, char* token, int lineNum){
+    char foo[1];
+
+    token = strtok(NULL, DELIMITERS);
+    if (token == NULL)
+        op->addrMode = No_Operand;
+    // not sure if can input + aswell, check that
+    else if (strspn(token, "+-012345678") == strlen(token)){
+        op->val.numericValue = atoi(token);
+        op->addrMode = Immidiate;
+    }
+    else if (token[0] == '@' && token[1] == 'r'){
+        foo[0] = token[2];
+        if (strspn(foo, "012345678") == 1){
+            op->val.regNum = atoi(foo);
+            op->addrMode = Register;
+        }
+        // return error
+    }
+    else{
+        strcpy(op->val.label, token);
+        op->addrMode = Direct;
+    }
+
+    return TRUE;
+}
+
 // try cleaning up and bit and making this functions more readable and more focused 
 int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile, label** labelTable, char* filename, int* dc, int* ic, int* labelCount){
     char* token;
@@ -475,7 +445,7 @@ int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile,
 
         isLabel = is_label(&token, labelName, line);
 
-        if ((commandCode = is_guidance_operation(token)) != FALSE){
+        if ((commandCode = is_guidance_command(token)) != FALSE){
             int* convertedData;
             int paramCnt;
             convertedData = (int*)calloc(1, sizeof(int)); // move this to a different function
@@ -486,12 +456,14 @@ int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile,
             counterPtr = dc;
         }
         else if ((commandCode = is_instruction_operation(token)) != -1){
-            char paramsequence[2];
             operation operationn;
-
+            operand operand1, operand2;
             operationn.opcode = commandCode;
 
-            get_param_sequence(&(operationn), paramsequence, token, lineNum); // get the value of each parameter
+            get_param_value(&operand1, token, lineNum);
+            get_param_value(&operand2, token, lineNum);
+
+            set_operands(&operationn, &operand1, &operand2);
 
             write_first_word(operationArray, &operationn, ic);
             add_operand_words(operationArray, labelTable, &operationn, ic, *labelCount);
@@ -502,60 +474,11 @@ int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile,
             return error_handler();
 
         if (commandCode != -1 && isLabel == TRUE)
-            add_label(labelTable, labelName, labelCount, *counterPtr, TYP_IC, lineNum);
+            add_label(labelTable, labelName, labelCount, *counterPtr, lineNum);
     }
 
     // close files
     // free memory
-    return TRUE;
-}
-
-// this is written in an ugly way, change it later
-int get_param_value(operand* op, char* token, int lineNum){
-    char foo[1];
-
-    token = strtok(NULL, DELIMITERS);
-    if (token == NULL)
-        return No_Operand;
-    // not sure if can input + aswell, check that
-    else if (strspn(token, "+-012345678") == strlen(token)){
-        op->value = atoi(token);
-        return Immidiate;
-    }
-    else if (token[0] == '@' && token[1] == 'r'){
-        foo[0] = token[2];
-        if (strspn(foo, "012345678") == 1){
-            op->regNum = atoi(foo);
-            return Register;
-        }
-        // return error
-    }
-    /* if its nothing else, its a label */
-    strcpy(op->label, token);
-    return Direct;
-}
-
-// pretty ugly, need to rewrite 
-int get_param_sequence(operation* operationn, char* paramsequence, char* token, int lineNum){
-    paramsequence[0] = get_operand_type(token, lineNum);
-    paramsequence[1] = get_operand_type(token, lineNum);
-
-    if (paramsequence[0] == '0' && paramsequence[1] == '0') /*no operands*/
-	    operationn->sourceAM = operationn->destAM = 0; 
-
-    else if (paramsequence[0] != '0' && paramsequence[0] != '0'){ /*2 operands*/
-	    operationn->sourceAM = CHAR_TO_INT(paramsequence[0]);
-	    operationn->destAM = CHAR_TO_INT(paramsequence[1]);
-
-        get_param_value(&(operationn->sourceOperand), token, lineNum);
-        get_param_value(&(operationn->destOperand), token, lineNum);
-    }
-    else { /*1 operand*/
-	    operationn->sourceAM = 0;
-        operationn->destAM = CHAR_TO_INT(paramsequence[0]);
-        get_param_value(&(operationn->destOperand), token, lineNum);
-    }
-
     return TRUE;
 }
 

@@ -39,24 +39,23 @@ typedef struct counter{
     int counterType;
     int address;
 } counter;
+
 typedef struct label{
     char name[MAX_LABEL_LENGTH]; /*the name of the label, eg "MAIN"*/
     int line; /*the line the table was defined*/ 
     counter cnt; /*the type of the table relocateable, */ /*the value of the counter*/
 } label;
 
-typedef struct operand{
-    int addressingMode;
-    operandValue val;
-} operand
-
 typedef union operandValue{
-    // int nonExistent : 1; // might want to remove that
     int regNum;
     int numericValue;
     char label[MAX_LABEL_LENGTH+1];
 } operandValue;
 
+typedef struct operand{
+    int addrMode;
+    operandValue val;
+} operand;
 typedef struct operation{
     int opcode;
     // char paramSequence[2];
@@ -69,20 +68,19 @@ void remove_spaces(char* str);
 int error_handler();
 int* add_extern_labels();
 int convert_to_binary(char binary[], int number, int size);
-int add_label(label** labelTable, char labelName[], int* labelCount, int counterValue, int type, int lineNum);
-char get_operand_type(char* token, int lineNum);
+int add_label(label** labelTable, char labelName[], int* labelCount, int counterValue, int lineNum);
 int write_first_word(char*** operationArray, operation* operationn, int* ic);
 int is_instruction_operation(char* opname);
 int string_handler(char* stringLine, int* stringConverted, int lineNum);
 int data_handler(char** dataLine, int* params, int lineNum);
 int write_data(char*** dataArray, int* params, int* dc, int paramCnt, int lineNum);
 int call_data_analyzer(char** token, int* convertedData, int commandCode, int lineNum);
-int is_guidance_operation(char* operation);
+int is_guidance_command(char* operation);
 int is_label(char** token, char labelName[MAX_LABEL_LENGTH], char line[MAX_LINE_LENGTH]);
 FILE* open_file(char* filename, char* ending, char* mode);
 int read_input_file(FILE** sourceFile, char* filename, char ending[3], char line[MAX_LINE_LENGTH], int* lineNum);
 int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile, label** labelTable, char* filename, int* dc, int* ic, int* labelCount);
-int add_operand_words(char*** operationArray, label** labelTable, operation* operationn, int* ic, int labelCount);
+int add_operand_words();
 int get_type_val(label** labelTable, operand* operandd, int* val, int labelCount, int addressingMode);
 int flip_negative(char binary[]);
 int add_to_counterArray(char*** counterArray, int* counter, char* toAdd);
@@ -91,6 +89,8 @@ int add_one(char binary[]);
 int get_combined_word(char* binary, int sourceVal, int destVal);
 int get_one_word(char* binary, int val);
 int find_label(label* labelTable, char* labelName, int labelCount);
+int get_param_value(operand* op, char* token, int lineNum);
+int set_operands(operation* operationn, operand* operand1, operand* operand2);
 
 
 /* these are functions declarations of the secondpass*/

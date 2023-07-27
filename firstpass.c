@@ -138,28 +138,22 @@ int add_label(label** labelTable, char labelName[], int* labelCount, int counter
 }
 
 /* is direct immidiate and register actually a way to differenetiate them?? */
-int get_operand_type(operand* op, char* token, int lineNum){
+// break this function down.
+char get_operand_type(char* token, int lineNum){
     char foo[1];
 
     token = strtok(NULL, DELIMITERS);
     if (token == NULL)
-        return No_Operand;
+        return '0'; // No_Operand
     // not sure if can input + aswell, check that
-    else if (strspn(token, "+-012345678") == strlen(token)){
-        op->value = atoi(token);
-        return Immidiate;
-    }
-    else if (token[0] == '@' && token[1] == 'r'){
-        foo[0] = token[2];
-        if (strspn(foo, "012345678") == 1){
-            op->regNum = atoi(foo);
-            return Register;
-        }
-        // return error
-    }
+    else if (strspn(token, "+-012345678") == strlen(token))
+        return '1'; // Immidiate
+
+    else if (token[0] == '@' && token[1] == 'r')
+        return '5'; // Register
+
     /* if its nothing else, its a label */
-    strcpy(op->label, token);
-    return Direct;
+    return '3'; // Direct
 }
 
 int write_first_word(char*** operationArray, operation* operationn, int* ic){
@@ -479,6 +473,7 @@ int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile,
     while (read_input_file(amFile, filename,".am", originalLine, &lineNum) == 1){
         strcpy(line, originalLine);
         token = strtok(line, DELIMITERS);
+
         isLabel = is_label(&token, labelName, line);
 
         if ((commandCode = is_guidance_operation(token)) != FALSE){
@@ -492,11 +487,13 @@ int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile,
             counterPtr = dc;
         }
         else if ((commandCode = is_instruction_operation(token)) != -1){
+            char paramsequence[2];
             operation operationn;
 
             operationn.opcode = commandCode;
-            operationn.sourceAM = get_operand_type(&(operationn.sourceOperand), token, lineNum);
-            operationn.destAM = get_operand_type(&(operationn.destOperand), token, lineNum);
+
+            get_param_sequence(paramsequence, token, &(operationn.sourceAM), &(operationn.destAM), lineNum);
+            get_param_value();
 
             write_first_word(operationArray, &operationn, ic);
             add_operand_words(operationArray, labelTable, &operationn, ic, *labelCount);
@@ -512,6 +509,29 @@ int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile,
 
     // close files
     // free memory
+    return TRUE;
+}
+
+int get_param_value(operand* op, char* token, int lineNum){
+    
+}
+
+int get_param_sequence(char* paramsequence, char* token, int* sourceAM, int* destAM, int lineNum){
+    paramsequence[0] = get_operand_type(token, lineNum);
+    paramsequence[1] = get_operand_type(token, lineNum);
+
+    if (paramsequence[0] == '0' && paramsequence[1] == '0') /*no operands*/
+	    *sourceAM = *destAM = 0; 
+
+    else if (paramsequence[0] != '0' && paramsequence[0] != '0'){ /*2 operands*/
+	    *sourceAM = CHAR_TO_INT(paramsequence[0]);
+	    *destAM = CHAR_TO_INT(paramsequence[1]);
+    }
+    else { /*1 operand*/
+	    *sourceAM = 0;
+	    *destAM = CHAR_TO_INT(paramsequence[0]);
+    }
+
     return TRUE;
 }
 
@@ -534,13 +554,13 @@ int main(int argc, char** argv){
 
         first_pass_invoker(&dcArray, &icArray, &amFile, &labelTable, filename, &dc, &ic, &labelCount);
 
-        printf("data words:\n");
-        PRINTWORDS(dcArray, dc);
         printf("instructions words:\n");
-        PRINTWORDS(icArray, ic);
+        PRINTWORDS(icArray, ic, 0);
+        printf("data words:\n");
+        PRINTWORDS(dcArray, dc, ic);
 
         print_instructions(icArray, labelTable, filename, ic, labelCount);
-        print_data(dcArray, filename, dc);
+        print_data(dcArray, filename, dc, dc);
     }
     // close files
     // free memory
@@ -548,22 +568,24 @@ int main(int argc, char** argv){
 }
 /*-------------------------------------------------- TESTING FUNCTIONS --------------------------------------------*/
 
-int PRINTWORDS(char** counterArray, int counter){
+int PRINTWORDS(char** counterArray, int counter, int subCounter){
     int i;
-    for (i = 0; i < counter; i++)
-        printf("%s\n", counterArray[i]);
+    for (i = subCounter; i < counter+subCounter; i++){
+        printf("address %d:", i+100);
+        printf(" %s\n", counterArray[i-subCounter]);
+    }
     return 0;
 }
 
 /*-------------------------------------------------- SECONDPASS FUNCTIONS ----------------------------------------------------*/
-int print_data(char** array, char* filename, int dc){
+int print_data(char** array, char* filename, int dc, int ic){
     FILE* obFile;
     int i;
 
     obFile = open_file(filename, ".ob", "a+");
 
-    for (i = 0; i < dc; i++){
-        fprintf(obFile, "%s\n", array[i]);
+    for (i = ic; i < dc+ic; i++){
+        fprintf(obFile, "%s\n", array[i-ic]);
     }
 }
 
@@ -582,9 +604,9 @@ int print_instructions(char** array, label* labelTable, char* filename, int ic, 
             if (labelAddress != FALSE){
                 get_one_word(binary, labelAddress);
                 // might want to uncomment this and add the label address to the array instead of the name for later use
-                /* array[i] = (char*)realloc((*array), sizeof(char) * (strlen(binary)+1));
-                strcpy(array[i], binary); */
-                fprintf(obFile, "%s\n", binary);
+                array[i] = (char*)realloc((*array), sizeof(char) * (strlen(binary)+1));
+                strcpy(array[i], binary);
+                fprintf(obFile, "%s\n", array[i]);
             }
             else{
                 printf("Error: label %s not found\n", array[i]);

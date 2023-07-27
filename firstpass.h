@@ -27,6 +27,7 @@
 #define _INSTRUCTION 5
 
 #define LAST_CHARACTER(string) *(string+strlen(string)-1)
+#define CHAR_TO_INT(c) (c - '0')
 
 enum Opcodes {Mov = 0, Cmp, Add, Sub, Not, Clr, Lea, Inc, Dec, Jmp, Bne, Red, Prn, Jsr, Rts, Stop};
 enum AddressingModes {No_Operand = 0, Immidiate = 1, Direct = 3, Register = 5};
@@ -53,6 +54,7 @@ typedef struct operation{
     int opcode;
     int sourceAM; // source addressing mode
     int destAM; // destination addressing mode
+    char paramSequence[2];
     operand sourceOperand;
     operand destOperand;
 } operation;
@@ -63,7 +65,7 @@ int error_handler();
 int* add_extern_labels();
 int convert_to_binary(char binary[], int number, int size);
 int add_label(label** labelTable, char labelName[], int* labelCount, int counterValue, int type, int lineNum);
-int get_operand_type(operand* op, char* token, int lineNum);
+char get_operand_type(char* token, int lineNum);
 int write_first_word(char*** operationArray, operation* operationn, int* ic);
 int is_instruction_operation(char* opname);
 int string_handler(char* stringLine, int* stringConverted, int lineNum);
@@ -79,7 +81,7 @@ int add_operand_words(char*** operationArray, label** labelTable, operation* ope
 int get_type_val(label** labelTable, operand* operandd, int* val, int labelCount, int addressingMode);
 int flip_negative(char binary[]);
 int add_to_counterArray(char*** counterArray, int* counter, char* toAdd);
-int PRINTWORDS(char** counterArray, int counter);
+int PRINTWORDS(char** counterArray, int counter, int subCounter);
 int add_one(char binary[]);
 int get_combined_word(char* binary, int sourceVal, int destVal);
 int get_one_word(char* binary, int val);
@@ -88,4 +90,4 @@ int find_label(label* labelTable, char* labelName, int labelCount);
 
 /* these are functions declarations of the secondpass*/
 int print_instructions(char** array, label* labelTable, char* filename, int ic, int labelCount);
-int print_data(char** array, char* filename, int dc);
+int print_data(char** array, char* filename, int dc, int ic);

@@ -138,7 +138,6 @@ int add_label(label** labelTable, char labelName[], int* labelCount, int counter
 }
 
 /* is direct immidiate and register actually a way to differenetiate them?? */
-// break this function down.
 char get_operand_type(char* token, int lineNum){
     char foo[1];
 
@@ -492,8 +491,7 @@ int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile,
 
             operationn.opcode = commandCode;
 
-            get_param_sequence(paramsequence, token, &(operationn.sourceAM), &(operationn.destAM), lineNum);
-            get_param_value(); // get the value of each parameter
+            get_param_sequence(&(operationn), paramsequence, token, lineNum); // get the value of each parameter
 
             write_first_word(operationArray, &operationn, ic);
             add_operand_words(operationArray, labelTable, &operationn, ic, *labelCount);
@@ -512,40 +510,52 @@ int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile,
     return TRUE;
 }
 
-int add_operand_value(operator* operatorr, char addressingMode, int paramVal){
-    if (addressingMode == '1'){
-        operatorr->value = paramVal;
-    }
-    else if (addressingMode == '3'){
-        operatorr->regNum = paramVal;
-    }
-    else if (addressingMode == '5'){
-        operatorr->regNum = paramVal;
-    }
-    else {
+// this is written in an ugly way, change it later
+int get_param_value(operand* op, char* token, int lineNum){
+    char foo[1];
 
+    token = strtok(NULL, DELIMITERS);
+    if (token == NULL)
+        return No_Operand;
+    // not sure if can input + aswell, check that
+    else if (strspn(token, "+-012345678") == strlen(token)){
+        op->value = atoi(token);
+        return Immidiate;
     }
+    else if (token[0] == '@' && token[1] == 'r'){
+        foo[0] = token[2];
+        if (strspn(foo, "012345678") == 1){
+            op->regNum = atoi(foo);
+            return Register;
+        }
+        // return error
+    }
+    /* if its nothing else, its a label */
+    strcpy(op->label, token);
+    return Direct;
 }
 
+// pretty ugly, need to rewrite 
 int get_param_sequence(operation* operationn, char* paramsequence, char* token, int lineNum){
-    int param1val, param2val;
-
-    paramVal1 = get_operand_type(token, lineNum, paramsequence[0]);
-    paramVal2 = get_operand_type(token, lineNum, paramsequence[1]);
+    paramsequence[0] = get_operand_type(token, lineNum);
+    paramsequence[1] = get_operand_type(token, lineNum);
 
     if (paramsequence[0] == '0' && paramsequence[1] == '0') /*no operands*/
-	    operationn->sourceAM = opreationn->destAM = 0; 
+	    operationn->sourceAM = operationn->destAM = 0; 
 
     else if (paramsequence[0] != '0' && paramsequence[0] != '0'){ /*2 operands*/
 	    operationn->sourceAM = CHAR_TO_INT(paramsequence[0]);
 	    operationn->destAM = CHAR_TO_INT(paramsequence[1]);
+
+        get_param_value(&(operationn->sourceOperand), token, lineNum);
+        get_param_value(&(operationn->destOperand), token, lineNum);
     }
     else { /*1 operand*/
 	    operationn->sourceAM = 0;
         operationn->destAM = CHAR_TO_INT(paramsequence[0]);
+        get_param_value(&(operationn->destOperand), token, lineNum);
     }
 
-    add_operand_value()
     return TRUE;
 }
 

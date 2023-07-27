@@ -44,19 +44,24 @@ typedef struct label{
     int line; /*the line the table was defined*/ 
     counter cnt; /*the type of the table relocateable, */ /*the value of the counter*/
 } label;
-typedef union operand{
+
+typedef struct operand{
+    int addressingMode;
+    operandValue val;
+} operand
+
+typedef union operandValue{
     // int nonExistent : 1; // might want to remove that
     int regNum;
-    int value;
+    int numericValue;
     char label[MAX_LABEL_LENGTH+1];
-} operand;
+} operandValue;
+
 typedef struct operation{
     int opcode;
-    int sourceAM; // source addressing mode
-    int destAM; // destination addressing mode
-    char paramSequence[2];
-    operand sourceOperand;
-    operand destOperand;
+    // char paramSequence[2];
+    operand* sourceOperand;
+    operand* destOperand;
 } operation;
 
 char* replace_commas(char* str);

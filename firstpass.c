@@ -46,21 +46,10 @@ void remove_spaces(char* str) {
 }
 
 /* ------------------------------------------------------------ FUNCTIONS IN USE BUT THAT RETURN WORTHLESS VALUES ---------------------------------- */
+
 int error_handler(){
     printf("theres error!\n");
     return 0;
-}
-
-int* add_extern_labels(){
-    /* token = strtok(NULL, DELIMITERS);
-    while (token != NULL){
-            // add to the list of yet unknown labels!
-        add_label_use(labelTable, token, Extern, lineNum, labelCount); // add the label to the label table, using IC, if the label already exists, print error
-        token = strtok(NULL, DELIMITERS);
-    } */
-    int* ptr;
-    ptr = (int*)malloc(sizeof(int));
-    return ptr;
 }
 
 /* ----------------------------------------------------------------- FUNCTIONS IN USE ------------------------------------------------------------------- */
@@ -513,6 +502,7 @@ int main(int argc, char** argv){
     // free memory
     
 }
+
 /*-------------------------------------------------- TESTING FUNCTIONS --------------------------------------------*/
 
 int PRINTWORDS(char** counterArray, int counter, int subCounter){
@@ -523,48 +513,3 @@ int PRINTWORDS(char** counterArray, int counter, int subCounter){
     }
     return 0;
 }
-
-/*-------------------------------------------------- SECONDPASS FUNCTIONS ----------------------------------------------------*/
-int print_data(char** array, char* filename, int dc, int ic){
-    FILE* obFile;
-    int i;
-
-    obFile = open_file(filename, ".ob", "a+");
-
-    for (i = ic; i < dc+ic; i++){
-        fprintf(obFile, "%s\n", array[i-ic]);
-    }
-}
-
-int print_instructions(char** array, label* labelTable, char* filename, int ic, int labelCount){
-    FILE* obFile;
-    char binary[13];
-    int i, labelAddress;
-
-    obFile = open_file(filename, ".ob", "a+");
-
-    for (i = 0; i < ic; i++){
-        if (LAST_CHARACTER(array[i]) == 'l') { //NOTE FOR FIRSTPASS: add the 'l' character to each label added to the array 
-            LAST_CHARACTER(array[i]) = '\0';
-            labelAddress = find_label(labelTable, array[i], labelCount);
-
-            if (labelAddress != FALSE){
-                get_one_word(binary, labelAddress);
-                // might want to uncomment this and add the label address to the array instead of the name for later use
-                array[i] = (char*)realloc((*array), sizeof(char) * (strlen(binary)+1));
-                strcpy(array[i], binary);
-                fprintf(obFile, "%s\n", array[i]);
-            }
-            else{
-                printf("Error: label %s not found\n", array[i]);
-                return 0;
-            }
-        }
-        else{
-            fprintf(obFile, "%s\n", array[i]);
-        }
-    }
-    return 1;
-}
-
-/*convert binary to base 64bit*/

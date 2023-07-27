@@ -74,7 +74,7 @@ int is_guidance_operation(char* operation);
 int is_label(char** token, char labelName[MAX_LABEL_LENGTH], char line[MAX_LINE_LENGTH]);
 FILE* open_file(char* filename, char* ending, char* mode);
 int read_input_file(FILE** sourceFile, char* filename, char ending[3], char line[MAX_LINE_LENGTH], int* lineNum);
-int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile, label** labelTable, char* filename, int* dc, int* ic);
+int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile, label** labelTable, char* filename, int* dc, int* ic, int* labelCount);
 int add_operand_words(char*** operationArray, label** labelTable, operation* operationn, int* ic, int labelCount);
 int get_type_val(label** labelTable, operand* operandd, int* val, int labelCount, int addressingMode);
 int flip_negative(char binary[]);
@@ -83,4 +83,9 @@ int PRINTWORDS(char** counterArray, int counter);
 int add_one(char binary[]);
 int get_combined_word(char* binary, int sourceVal, int destVal);
 int get_one_word(char* binary, int val);
-int find_label(label** labelTable, char* labelName, int labelCount);
+int find_label(label* labelTable, char* labelName, int labelCount);
+
+
+/* these are functions declarations of the secondpass*/
+int print_instructions(char** array, label* labelTable, char* filename, int ic, int labelCount);
+int print_data(char** array, char* filename, int dc);

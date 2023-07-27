@@ -1,4 +1,5 @@
 mov @r4,LENGTH
 STR: .string "abcdef"
 END: .data 1
+LENGTH: .data 2
 bne END, @r2

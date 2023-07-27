@@ -126,7 +126,7 @@ int add_label(label** labelTable, char labelName[], int* labelCount, int counter
     int i;
     (*labelTable) = (label*)realloc((*labelTable), sizeof(label) * ((*labelCount)+1));
 
-    if (find_label(labelTable, labelName, *labelCount) != FALSE)
+    if (find_label(*labelTable, labelName, *labelCount) != FALSE)
         return error_handler();
     
     strcpy((*labelTable)[*labelCount].name, labelName);
@@ -372,7 +372,7 @@ int get_type_val(label** labelTable, operand* operandd, int* val, int labelCount
     if (addressingMode == Immidiate)
         *val = operandd->value;
     else if (addressingMode == Direct){
-        *val = find_label(labelTable, operandd->label, labelCount); // this is label! handle this
+        *val = find_label(*labelTable, operandd->label, labelCount); // this is label! handle this
         return Direct;
     }
     else if (addressingMode == Register)
@@ -381,12 +381,12 @@ int get_type_val(label** labelTable, operand* operandd, int* val, int labelCount
     return No_Operand;
 }
 
-int find_label(label** labelTable, char* labelName, int labelCount){
+int find_label(label* labelTable, char* labelName, int labelCount){
     int i;
 
     for (i = 0; i < labelCount; i++)
-        if (strcmp((*labelTable)[i].name, labelName) == 0)
-            return (*labelTable)[i].cnt.address;
+        if (strcmp(labelTable[i].name, labelName) == 0)
+            return labelTable[i].cnt.address;
 
     return FALSE;
 }
@@ -400,6 +400,7 @@ int add_operand_words(char*** operationArray, label** labelTable, operation* ope
 
     if (get_type_val(labelTable, &(operationn->sourceOperand), &sourceVal, labelCount, operationn->sourceAM) == Direct){
         if (sourceVal == FALSE){
+            strcat(operationn->destOperand.label, "l");
             add_to_counterArray(operationArray, ic, operationn->sourceOperand.label);
             writeSource = FALSE;
         }
@@ -408,10 +409,11 @@ int add_operand_words(char*** operationArray, label** labelTable, operation* ope
             add_to_counterArray(operationArray, ic, binary);
             writeSource = FALSE;
         }
-        printf("%d\n", sourceVal);
+/*         printf("%d\n", sourceVal); */
     }
     if (get_type_val(labelTable, &(operationn->destOperand), &destVal, labelCount, operationn->destAM) == Direct){
         if (destVal == FALSE){
+            strcat(operationn->destOperand.label, "l");
             add_to_counterArray(operationArray, ic, operationn->destOperand.label);
             writeDest = FALSE;
         }
@@ -462,17 +464,17 @@ int get_one_word(char* binary, int val){
     return TRUE;
 }
 
-int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile, label** labelTable, char* filename, int* dc, int* ic){
+// try cleaning up and bit and making this functions more readable and more focused 
+int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile, label** labelTable, char* filename, int* dc, int* ic, int* labelCount){
     char* token;
     char line[MAX_LINE_LENGTH], originalLine[MAX_LINE_LENGTH];
     char labelName[MAX_LABEL_LENGTH];
     int* counterPtr;
     int isLabel;
-    int labelCount;
     int commandCode;
     int lineNum;
 
-    *dc = *ic = labelCount = lineNum = 0;
+    *dc = *ic = *labelCount = lineNum = 0;
 
     while (read_input_file(amFile, filename,".am", originalLine, &lineNum) == 1){
         strcpy(line, originalLine);
@@ -497,7 +499,7 @@ int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile,
             operationn.destAM = get_operand_type(&(operationn.destOperand), token, lineNum);
 
             write_first_word(operationArray, &operationn, ic);
-            add_operand_words(operationArray, labelTable, &operationn, ic, labelCount);
+            add_operand_words(operationArray, labelTable, &operationn, ic, *labelCount);
 
             counterPtr = ic;
         }
@@ -505,7 +507,7 @@ int first_pass_invoker(char*** dataArray, char*** operationArray, FILE** amFile,
             return error_handler();
 
         if (commandCode != -1 && isLabel == TRUE)
-            add_label(labelTable, labelName, &labelCount, *counterPtr, TYP_IC, lineNum);
+            add_label(labelTable, labelName, labelCount, *counterPtr, TYP_IC, lineNum);
     }
 
     // close files
@@ -518,7 +520,7 @@ int main(int argc, char** argv){
     FILE* amFile;
     label* labelTable;
     char filename[MAX_FILENAME_LENGTH];
-    int dc, ic;
+    int dc, ic, labelCount;
     char** dcArray; 
     char** icArray;
 
@@ -530,12 +532,15 @@ int main(int argc, char** argv){
         icArray = (char**)malloc(sizeof(char*));
         labelTable = (label*)malloc(sizeof(label));
 
-        first_pass_invoker(&dcArray, &icArray, &amFile, &labelTable, filename, &dc, &ic);
+        first_pass_invoker(&dcArray, &icArray, &amFile, &labelTable, filename, &dc, &ic, &labelCount);
 
         printf("data words:\n");
         PRINTWORDS(dcArray, dc);
         printf("instructions words:\n");
         PRINTWORDS(icArray, ic);
+
+        print_instructions(icArray, labelTable, filename, ic, labelCount);
+        print_data(dcArray, filename, dc);
     }
     // close files
     // free memory
@@ -549,3 +554,48 @@ int PRINTWORDS(char** counterArray, int counter){
         printf("%s\n", counterArray[i]);
     return 0;
 }
+
+/*-------------------------------------------------- SECONDPASS FUNCTIONS ----------------------------------------------------*/
+int print_data(char** array, char* filename, int dc){
+    FILE* obFile;
+    int i;
+
+    obFile = open_file(filename, ".ob", "a+");
+
+    for (i = 0; i < dc; i++){
+        fprintf(obFile, "%s\n", array[i]);
+    }
+}
+
+int print_instructions(char** array, label* labelTable, char* filename, int ic, int labelCount){
+    FILE* obFile;
+    char binary[13];
+    int i, labelAddress;
+
+    obFile = open_file(filename, ".ob", "a+");
+
+    for (i = 0; i < ic; i++){
+        if (LAST_CHARACTER(array[i]) == 'l') { //NOTE FOR FIRSTPASS: add the 'l' character to each label added to the array 
+            LAST_CHARACTER(array[i]) = '\0';
+            labelAddress = find_label(labelTable, array[i], labelCount);
+
+            if (labelAddress != FALSE){
+                get_one_word(binary, labelAddress);
+                // might want to uncomment this and add the label address to the array instead of the name for later use
+                /* array[i] = (char*)realloc((*array), sizeof(char) * (strlen(binary)+1));
+                strcpy(array[i], binary); */
+                fprintf(obFile, "%s\n", binary);
+            }
+            else{
+                printf("Error: label %s not found\n", array[i]);
+                return 0;
+            }
+        }
+        else{
+            fprintf(obFile, "%s\n", array[i]);
+        }
+    }
+    return 1;
+}
+
+/*convert binary to base 64bit*/

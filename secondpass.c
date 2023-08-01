@@ -1,25 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#define FALSE 0
-#define TRUE 1
-#define MAX_LINE_LENGTH 80
-#define MAX_FILENAME_LENGTH 100
-#define MAX_LABEL_LENGTH 31
+#include "secondpass.h"
 
-typedef struct label{
-    char name[MAX_LABEL_LENGTH]; /*the name of the label, eg "MAIN"*/
-    int line; /*the line the table was defined*/ 
-    counter cnt; /*the type of the table relocateable, */ /*the value of the counter*/
-} label;
-
-typedef struct counter{
-    // not sure i need both fields, change later on if you see you need
-    int counterType;
-    int address;
-} counter;
-
+/*-------------------------------------------- NON SECONDPASS FUNCTIONS FOR TESTING --------------------------------------*/
 FILE* open_file(char* filename, char* ending, char* mode){
     char foo[MAX_FILENAME_LENGTH]; // add max for file extension as well
 
@@ -30,78 +12,82 @@ FILE* open_file(char* filename, char* ending, char* mode){
     return file;
 }
 
-int print_data(char** data, int dc){
-    int i;
-    for (i = 0; i < dc; i++){
-        printf("%s\n", data[i]);
-    }
-}
+/*------------------------------------------------------------------------------------------------------------------------*/
+// note: maybe add a function like add_to_array() but instead of adding its switch_element_in_array()?
 
-int print_instructions(char** array, label* labelTable, char* filename, int ic){
+int secondpass_invoke(char*** icArray, char*** dcArray, label** labelTable, extentlabel* head, char* filename, int labelCount, int ic, int dc){
+    FILE* extFile;
+    FILE* entFile;
     FILE* obFile;
-    char binary[13];
-    int i, labelAddress;
+    int errorFound;
 
-    obFile = open_file(filename, ".ob", "a+");
+    errorFound = FALSE;
 
-    for (i = 0; i < ic; i++){
-        if (*(array[i]) == 'l') { //NOTE FOR FIRSTPASS: add the 'l' character to each label added to the array 
-            labelAddress = find_label(array[i], labelTable);
+    unknown_labels(icArray, labelTable, &errorFound, labelCount, ic);
+    get_extent_addresses(labelTable, head, &errorFound, labelCount);
 
-            if (labelAddress != FALSE){
-                get_one_word(binary, labelAddress);
-                array[i] = (char*)realloc((*array), sizeof(char) * (strlen(binary)+1));
-                strcpy(array[i], binary);
-            }
-            else{
-                printf("Error: label %s not found\n", array[i]);
-                return 0;
-            }
-        }
-        else{
-            fprintf(obFile, "%s\n", array[i]);
-        }
+    if (errorFound == FALSE){
+        write_extent_file(head, extFile, entFile, filename);
+        write_obj_file(icArray, labelTable, obFile, filename, ic); // ic
+        write_obj_file(dcArray, labelTable, obFile, filename, dc); // dc
     }
-    return 1;
+
+    return TRUE;
 }
 
-int main(int argc, char** argv){
-    FILE* amFile;
-    label* labelTable;
-    char filename[MAX_FILENAME_LENGTH];
-    int dc, ic;
-    char** dcArray; 
-    char** icArray;
-
+int write_obj_file(char*** counterArray, label** labelTable, FILE* obFile, char* filename, int counter){
     int i;
-    for (i = 1; i < argc; i++){
-        strcpy(filename, argv[i]);
-        
-        dcArray = (char**)malloc(sizeof(char*));
-        icArray = (char**)malloc(sizeof(char*));
-        labelTable = (label*)malloc(sizeof(label));
 
-        first_pass_invoker(&dcArray, &icArray, &amFile, &labelTable, filename, &dc, &ic);
-
-        printf("data words:\n");
-        PRINTWORDS(dcArray, dc);
-        printf("instructions words:\n");
-        PRINTWORDS(icArray, ic);
-    }
-    // close files
-    // free memory
-    
+    obFile = open_file(filename, ".ent", "w");
+    for (i = 0; i < counter; i++)
+        fprintf(obFile, "%s\n", (*counterArray)[i]);
 }
 
-/**
- * go over the operationArray:
- *     if found a label:
- *          go over the label table and find the label. if label found:
- *              switch the label name and the label address
- *         else:
- *              print error
- *    else:
- *        print to file
- * 
- * go over the dataArray and write it to obj file
-*/
+int write_extent_file(extentlabel* head, FILE* extFile, FILE* entFile, char* filename){
+    extFile = open_file(filename, ".ext", "w");
+    entFile = open_file(filename, ".ent", "w");
+
+    while (head != NULL){
+        if (head->type == _ENTRY)
+            fprintf(entFile, "%s %d\n", head->name, head->address);
+        else
+            fprintf(extFile, "%s %d\n", head->name, head->address);
+
+        head = head->next;
+    }
+}
+
+
+int unknown_labels(char*** icArray, label** labelTable, int* errorFound, int labelCount, int ic){
+    int address, i;
+
+    for(i = 0; i < ic; i++){
+        if (*((*icArray)[i]) != '0' && *((*icArray)[i]) != '1'){
+            address = find_label(labelTable, (*icArray)[i], labelCount);
+
+            if (address == FALSE)
+                error_handler(errorFound);
+            else
+                (*icArray)[i] = convert_to_binary(address, 13);
+        }
+    }
+
+    return TRUE;
+}
+
+int get_extent_addresses(label** labelTable, extentlabel* head, int* errorFound, int labelCount){
+    int address;
+
+    while (head != NULL){
+        address = find_label(labelTable, head->name, labelCount);
+
+        if (address == FALSE)
+            error_handler(errorFound);
+        else
+            head->address = address;
+
+        head = head->next;
+    }
+
+    return TRUE;
+}

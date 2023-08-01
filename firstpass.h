@@ -25,7 +25,8 @@
 #define _STRING 2
 #define _ENTRY 3
 #define _EXTERN 4
-#define _INSTRUCTION 5
+#define _INSTRUCTION 6
+#define _NONE 5
 
 #define BOTH_ARE_NOT_NULL(sourceStatus, destStatus) (sourceStatus == 1 && destStatus == 1)
 #define BOTH_ARE_REGISTER(op) (op->destOperand->addrMode == Register && op->sourceOperand->addrMode == Register)
@@ -38,14 +39,14 @@ enum AddressingModes {No_Operand = 0, Immediate = 1, Direct = 3, Register = 5};
 enum Errors {No_Valid_Operation = 0, Cant_Read_Line, Label_Already_Exists, _commaerror_};
 
 typedef struct label{
-    char name[MAX_LABEL_LENGTH];
+    char labelName[MAX_LABEL_LENGTH];
     int line;
-    int type; // : 2
+    int type;
     int address; 
 } label;
 
 typedef union operandValue{
-    char labelName[MAX_LABEL_LENGTH+1];
+    char labelName[MAX_LABEL_LENGTH];
     int regNum;
     int numericVal;
 } operandValue;
@@ -88,6 +89,7 @@ int flip_negative(char binary[]);
 int add_to_counterArray(char*** counterArray, int* counter, char* toAdd);
 int PRINTWORDS(char** counterArray, int counter, int subCounter);
 int PRINTEXTENT(extentlabel* head);
+int PRINTLABEL(label* labelTable, int labelCount);
 int add_one(char binary[]);
 int get_register_word(char* binary, int sourceVal, int destVal);
 int get_isolated_word(operand* operandd, char* binary, int val, int status);

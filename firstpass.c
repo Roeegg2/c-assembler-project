@@ -121,7 +121,7 @@ int add_label(label** labelTable, char* labelName, int* labelCount, int counterV
     if (find_label(*labelTable, labelName, *labelCount) != FALSE)
         return error_handler(1);
     
-    strcpy((*labelTable)[*labelCount].name, labelName);
+    strcpy((*labelTable)[*labelCount].labelName, labelName);
     (*labelTable)[*labelCount].line = lineNum;
     (*labelTable)[*labelCount].address = counterValue+100; /*change that to a pointer outside of the function*/
     (*labelCount)++;
@@ -250,7 +250,7 @@ int data_handler(char** dataLine, int* params, int lineNum){
 
 int add_to_counterArray(char*** counterArray, int* counter, char* toAdd){
     (*counterArray) = (char**)realloc((*counterArray), sizeof(char*) * (*counter+1));
-    (*counterArray)[*counter] = (char*)malloc(sizeof(char) * MAX_LABEL_LENGTH));
+    (*counterArray)[*counter] = (char*)malloc(sizeof(char) * MAX_LABEL_LENGTH);
 
     strcpy((*counterArray)[*counter], toAdd);
     (*counter)++;
@@ -369,7 +369,7 @@ int find_label(label* labelTable, char* labelName, int labelCount){
     int i;
 
     for (i = 0; i < labelCount; i++)
-        if (strcmp(labelTable[i].name, labelName) == 0)
+        if (strcmp(labelTable[i].labelName, labelName) == 0)
             return labelTable[i].address; // need to return the address plus 100
 
     return FALSE;
@@ -495,7 +495,7 @@ int first_pass_invoker(char*** dcImage, char*** icImage, FILE** amFile, label** 
     char* token;
     char line[MAX_LINE_LENGTH], originalLine[MAX_LINE_LENGTH];
     char labelName[MAX_LABEL_LENGTH+1];
-    int* counterPtr;
+    int needtochangename;
     int commandCode;
     int lineNum;
     int temp;
@@ -508,6 +508,7 @@ int first_pass_invoker(char*** dcImage, char*** icImage, FILE** amFile, label** 
         token = strtok(line, DELIMITERS);
 
         isLabel = is_label(&token, labelName, line);
+        needtochangename = *ic + *dc;
 
         if ((commandCode = is_guidance_label_command(token)) != FALSE){
             token = strtok(NULL, DELIMITERS);
@@ -518,16 +519,15 @@ int first_pass_invoker(char*** dcImage, char*** icImage, FILE** amFile, label** 
             int* convertedData;
             int paramCnt;
             convertedData = (int*)calloc(1, sizeof(int)); // move this to a different function
-
             token = strtok(NULL, DELIMITERS);
 
             paramCnt = guidance_information_analyzer(&token, convertedData, commandCode, lineNum); /* calls the data analyzer depending on the guidance operation */
             get_data_word(dcImage, convertedData, dc, paramCnt, lineNum);
-            counterPtr = dc;
         }
         else if ((commandCode = is_instruction_operation(token)) != -1){
             operation op;
             operand operand1, operand2;
+
             op.opcode = commandCode;
 
             get_param_value(&operand1, token, lineNum);
@@ -537,14 +537,12 @@ int first_pass_invoker(char*** dcImage, char*** icImage, FILE** amFile, label** 
 
             add_first_op_word(icImage, &op, ic);
             add_operand_words(icImage, labelTable, &op, ic, *labelCount);
-
-            counterPtr = ic;
         }
         else
             return error_handler(1);
 
         if (isLabel == TRUE)// see question 1
-            add_label(labelTable, labelName, labelCount, *counterPtr, lineNum);
+            add_label(labelTable, labelName, labelCount, needtochangename, lineNum);
     }
 
     // close files
@@ -580,6 +578,8 @@ int main(int argc, char** argv){
         PRINTWORDS(icImage, ic, 0);
         printf("data words:\n");
         PRINTWORDS(dcImage, dc, ic);
+        printf("label table:\n");
+        PRINTLABEL(labelTable, labelCount);
     }
     // close files
     // free memory
@@ -605,6 +605,16 @@ int PRINTEXTENT(extentlabel* head){
     return 0;
 }
 
+int PRINTLABEL(label* labelTable, int labelCount){
+    int i;
+    for (i = 0; i < labelCount; i++){
+        printf("label: %s, address: %d\n", labelTable[i].labelName, labelTable[i].address);
+    }
+    return 0;
+}
+
 /**NOTES TO SELF:
  * 1. if command is wrong but has a lable pointing at it, should i add the label or not?
 */
+
+int 

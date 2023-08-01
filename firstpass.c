@@ -250,7 +250,7 @@ int data_handler(char** dataLine, int* params, int lineNum){
 
 int add_to_counterArray(char*** counterArray, int* counter, char* toAdd){
     (*counterArray) = (char**)realloc((*counterArray), sizeof(char*) * (*counter+1));
-    (*counterArray)[*counter] = (char*)malloc(sizeof(char) * (strlen(toAdd)+1));
+    (*counterArray)[*counter] = (char*)malloc(sizeof(char) * MAX_LABEL_LENGTH));
 
     strcpy((*counterArray)[*counter], toAdd);
     (*counter)++;

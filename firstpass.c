@@ -616,5 +616,3 @@ int PRINTLABEL(label* labelTable, int labelCount){
 /**NOTES TO SELF:
  * 1. if command is wrong but has a lable pointing at it, should i add the label or not?
 */
-
-int 

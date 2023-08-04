@@ -63,9 +63,14 @@ typedef struct operation{
     operand* destOperand;
 } operation;
 
+typedef union addr{
+    char declareAddr[13];
+    char* referenceAddr;
+} addr;
 typedef struct extentlabel{
-    char labelName[MAX_LABEL_LENGTH+1];
+    char labelName[MAX_LABEL_LENGTH];
     int type;
+    addr address;
     struct extentlabel* next;
 } extentlabel;
 
@@ -81,7 +86,7 @@ int data_handler(char** dataLine, int* params, int lineNum);
 int write_data(char*** dataArray, int* params, int* dc, int paramCnt, int lineNum);
 int is_label(char** token, char* labelName, char* line);
 FILE* open_file(char* filename, char* ending, char* mode);
-int read_input_file(FILE** sourceFile, char* filename, char ending[3], char line[MAX_LINE_LENGTH], int* lineNum);
+int read_input_file(FILE** sourceFile, char* filename, char ending[], char line[], int* lineNum);
 int first_pass_invoker(char*** dcImage, char*** icImage, FILE** amFile, label** labelTable, extentlabel** head, char* filename, int* dc, int* ic, int* labelCount);
 int add_operand_words(char*** icImage, label** labelTable, operation* op, int* ic, int labelCount);
 int get_type_val(label** labelTable, operand* operandd, int* val, int labelCount);

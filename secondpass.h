@@ -18,9 +18,14 @@ typedef struct label{
     int address; 
 } label;
 
+typedef union addr{
+    char declareAddr[13];
+    char* referenceAddr;
+} addr;
+
 typedef struct extentlabel{
-    char name[MAX_LABEL_LENGTH];
+    char labelName[MAX_LABEL_LENGTH];
     int type;
-    int address;
+    addr address;
     struct extentlabel* next;
 } extentlabel;

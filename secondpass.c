@@ -16,19 +16,21 @@ FILE* open_file(char* filename, char* ending, char* mode){
 // note: maybe add a function like add_to_array() but instead of adding its switch_element_in_array()?
 
 int secondpass_invoke(char*** icImage, char*** dcImage, label** labelTable, extentlabel* head, char* filename, int labelCount, int ic, int dc){
-    FILE* extFile;
-    FILE* entFile;
-    FILE* obFile;
     int errorFound;
-
     errorFound = FALSE;
 
     complete_extent_data(icImage, *labelTable, head, &errorFound, ic, labelCount);
+    map_labels(icImage, *labelTable, errorFound, ic, labelCount);
 
+    if (errorFound == FALSE){
+        write_obj_file(icImage, labelTable, filename, ic);
+        write_extent_file(head, filename);
+    }
     
+    return TRUE;
 }
 
-int map_labels(char*** icImage, label* labelTable, int ic, int labelCount){
+int map_labels(char*** icImage, label* labelTable, int* errorFound, int ic, int labelCount){
     // go over the icImage and if there is a label (aka an element in the array which its first char isnt 0 or 1)
     int address, i;
 
@@ -40,8 +42,10 @@ int map_labels(char*** icImage, label* labelTable, int ic, int labelCount){
                 *(icImage[i]) = (char*)realloc(*(icImage[i]), sizeof(char) * 12);
                 convert_to_binary(address, *(icImage[i]));
             }
-            else
+            else{
+                *errorFound = TRUE; // move this to error_handler() as well
                 return FALSE; // return error_handler() - label declared but not found
+            }
         }
     }
 

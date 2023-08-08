@@ -124,6 +124,7 @@ int add_label(label** labelTable, char* labelName, int* labelCount, int counterV
     strcpy((*labelTable)[*labelCount].labelName, labelName);
     (*labelTable)[*labelCount].line = lineNum;
     (*labelTable)[*labelCount].address = counterValue+100; /*change that to a pointer outside of the function*/
+    (*labelTable)[*labelCount].type = 0;
     (*labelCount)++;
     return 0;
 }
@@ -503,7 +504,7 @@ int first_pass_invoker(char*** dcImage, char*** icImage, FILE** amFile, label** 
 
     *dc = *ic = *labelCount = lineNum = 0;
 
-    while (read_input_file(amFile, filename,".am", originalLine, &lineNum) == 1){
+    while (read_input_file(amFile, filename,".am", originalLine, &lineNum) == TRUE){
         strcpy(line, originalLine);
         token = strtok(line, DELIMITERS);
 
@@ -514,10 +515,10 @@ int first_pass_invoker(char*** dcImage, char*** icImage, FILE** amFile, label** 
             token = strtok(NULL, DELIMITERS);
             add_extent_label(head, &token, commandCode);
         }
-
         else if ((commandCode = is_guidance_information_command(token)) != FALSE){
             int* convertedData;
             int paramCnt;
+
             convertedData = (int*)calloc(1, sizeof(int)); // move this to a different function
             token = strtok(NULL, DELIMITERS);
 
@@ -566,7 +567,6 @@ int main(int argc, char** argv){
         
         dcImage = (char**)malloc(sizeof(char*));
         icImage = (char**)malloc(sizeof(char*));
-
         labelTable = (label*)malloc(sizeof(label));
         head = NULL;
 
@@ -612,7 +612,3 @@ int PRINTLABEL(label* labelTable, int labelCount){
     }
     return 0;
 }
-
-/**NOTES TO SELF:
- * 1. if command is wrong but has a lable pointing at it, should i add the label or not?
-*/

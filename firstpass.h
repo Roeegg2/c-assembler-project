@@ -63,14 +63,13 @@ typedef struct operation{
     operand* destOperand;
 } operation;
 
-typedef union addr{
-    char declareAddr[13];
-    char* referenceAddr;
-} addr;
 typedef struct extentlabel{
     char labelName[MAX_LABEL_LENGTH];
+    struct{
+        int* addr;
+        int count;
+    } address;
     int type;
-    addr address;
     struct extentlabel* next;
 } extentlabel;
 
@@ -105,3 +104,14 @@ int guidance_information_analyzer(char** token, int* convertedData, int commandC
 int is_guidance_label_command(char* command);
 int is_guidance_information_command(char* command);
 int add_extent_label(extentlabel** head, char** token, int type);
+
+// ---------------------- secondpass fucntions ---------------------- //
+
+int secondpass_invoker(char*** dcImage, char*** icImage, label* labelTable, extentlabel** head, char* filename, int labelCount, int ic, int dc);
+int map_labels(char*** icImage, label* labelTable, int* errorFound, int ic, int labelCount);
+int write_ob_file(char** counterArray, label* labelTable, char* filename, int counter);
+int write_extent_file(extentlabel* head, char* filename);
+int complete_extent_data(char*** icImage, label* labelTable, extentlabel** head, int* errorFound, int ic, int labelCount);
+int get_data_extern(char*** icImage, extentlabel** head, int* errorFound, int ic);
+int get_data_entry(label* labelTable, extentlabel** head, int* errorFound, int labelCount);
+int print_extern(extentlabel head, FILE* extFile);

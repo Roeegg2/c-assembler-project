@@ -12,20 +12,18 @@
 #define _EXTERN 4
 
 typedef struct label{
-    char name[MAX_LABEL_LENGTH];
+    char labelName[MAX_LABEL_LENGTH];
     int line;
     int type; // : 2
     int address; 
 } label;
 
-typedef union addr{
-    char declareAddr[13];
-    char* referenceAddr;
-} addr;
-
 typedef struct extentlabel{
     char labelName[MAX_LABEL_LENGTH];
+    struct{
+        int* addr;
+        int count;
+    } address;
     int type;
-    addr address;
     struct extentlabel* next;
 } extentlabel;

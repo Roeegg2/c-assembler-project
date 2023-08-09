@@ -3,12 +3,19 @@
 #include <string.h>
 #include <limits.h>
 
+
+// ------------------ need to go in utils.c ------------------ //
+#define MAX_LINE_LENGTH 82
+#define MAX_FILENAME_LENGTH 30
+
+FILE* open_file(char* filename, char* ending, char* mode);
+int read_input_file(FILE** sourceFile, char* filename, char ending[], char line[], int* lineNum);
+
+
 // check all of these and make sure they are right!
 #define SIZE_OF_WORD 12
 
-#define MAX_LINE_LENGTH 82
 #define MAX_LABEL_LENGTH 31
-#define MAX_FILENAME_LENGTH 30
 #define MAX_DATA_LENGTH 10 
 #define MAX_OPERANDS 2
 
@@ -16,10 +23,15 @@
 
 #define TRUE 1
 #define FALSE 0
+#define ERROR -1
 
 #define ABSOLUTE "00"
 #define RELOCATABLE "10"
 #define EXTERNAL "01"
+
+#define _WHITENOTE 1
+#define _COMMA 2
+#define _CHAR 3
 
 #define _DATA 1
 #define _STRING 2
@@ -36,7 +48,7 @@
 
 enum Opcodes {Mov = 0, Cmp, Add, Sub, Not, Clr, Lea, Inc, Dec, Jmp, Bne, Red, Prn, Jsr, Rts, Stop};
 enum AddressingModes {No_Operand = 0, Immediate = 1, Direct = 3, Register = 5};
-enum Errors {No_Valid_Operation = 0, Cant_Read_Line, Label_Already_Exists, _commaerror_};
+enum Errors {Unknown_Command = 0, Comma_Error, Extra_Comma, Double_Comma, Missing_Comma, Invalid_Parameter_Data, Illegal_Comma_Name};
 
 typedef struct label{
     char labelName[MAX_LABEL_LENGTH];
@@ -73,19 +85,17 @@ typedef struct extentlabel{
     struct extentlabel* next;
 } extentlabel;
 
-char* replace_commas(char* str);
-void remove_spaces(char* str);
+int replace_commas(char* str);
+int remove_spaces(char* str);
 int error_handler();
 int convert_to_binary(char binary[], int number, int size);
 int add_label(label** labelTable, char* labelName, int* labelCount, int counterValue, int lineNum);
 int add_first_op_word(char*** icImage, operation* op, int* ic);
 int is_instruction_operation(char* opname);
 int string_handler(char* stringLine, int* stringConverted, int lineNum);
-int data_handler(char** dataLine, int* params, int lineNum);
+int data_handler(char* dataLine, int* params, int lineNum);
 int write_data(char*** dataArray, int* params, int* dc, int paramCnt, int lineNum);
-int is_label(char** token, char* labelName, char* line);
-FILE* open_file(char* filename, char* ending, char* mode);
-int read_input_file(FILE** sourceFile, char* filename, char ending[], char line[], int* lineNum);
+int is_label(char** token, char* labelName, char* line, int lineNum);
 int first_pass_invoker(char*** dcImage, char*** icImage, FILE** amFile, label** labelTable, extentlabel** head, char* filename, int* dc, int* ic, int* labelCount);
 int add_operand_words(char*** icImage, label** labelTable, operation* op, int* ic, int labelCount);
 int get_type_val(label** labelTable, operand* operandd, int* val, int labelCount);
@@ -100,11 +110,15 @@ int get_isolated_word(operand* operandd, char* binary, int val, int status);
 int find_label(label* labelTable, char* labelName, int labelCount);
 int get_param_value(operand* op, char* token, int lineNum);
 int set_operands(operation* operationn, operand* operand1, operand* operand2);
-int guidance_information_analyzer(char** token, int* convertedData, int commandCode, int lineNum);
+int guidance_information_analyzer(char* orginialLine, int** convertedData, int commandCode, int lineNum);
 int is_guidance_label_command(char* command);
 int is_guidance_information_command(char* command);
 int add_extent_label(extentlabel** head, char** token, int type);
-
+int get_comma_param_cnt(char* line, int lineNum);
+int add_data_word(char ***dcImage, int *params, int *dc, int paramCnt, int lineNum);
+int is_datastring_instruction(char* token);
+int is_extent_instruction(char* token);
+int call_analyzer(char** lineToken, int** params, char* orgLineToken, int lineNum, int commandCode);
 // ---------------------- secondpass fucntions ---------------------- //
 
 int secondpass_invoker(char*** dcImage, char*** icImage, label* labelTable, extentlabel** head, char* filename, int labelCount, int ic, int dc);

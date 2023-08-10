@@ -33,6 +33,9 @@ int read_input_file(FILE** sourceFile, char* filename, char ending[], char line[
 #define _COMMA 2
 #define _CHAR 3
 
+#define _SOURCE 0
+#define _DEST 1
+
 #define _DATA 1
 #define _STRING 2
 #define _ENTRY 3
@@ -48,7 +51,10 @@ int read_input_file(FILE** sourceFile, char* filename, char ending[], char line[
 
 enum Opcodes {Mov = 0, Cmp, Add, Sub, Not, Clr, Lea, Inc, Dec, Jmp, Bne, Red, Prn, Jsr, Rts, Stop};
 enum AddressingModes {No_Operand = 0, Immediate = 1, Direct = 3, Register = 5};
-enum Errors {Unknown_Command = 0, Comma_Error, Extra_Comma, Double_Comma, Missing_Comma, Invalid_Parameter_Data, Illegal_Comma_Name};
+enum Errors {Unknown_Command = 0, Comma_Error, Extra_Comma, Double_Comma, Missing_Comma, 
+    Invalid_Parameter_Data, Invalid_Source_Sequence, Invalid_Dest_Sequence, 
+    Illegal_String_Declaration, Label_Already_Defined, Illegal_Comma_Name_First_Char, 
+    Illegal_Comma_Name_Illegal_Chars, Illegal_Comma_Name_Saved_Word};
 
 typedef struct label{
     char labelName[MAX_LABEL_LENGTH];
@@ -119,6 +125,9 @@ int add_data_word(char ***dcImage, int *params, int *dc, int paramCnt, int lineN
 int is_datastring_instruction(char* token);
 int is_extent_instruction(char* token);
 int call_analyzer(char** lineToken, int** params, char* orgLineToken, int lineNum, int commandCode);
+int set_sequence_array_source(char sequenceArray[16][4]);
+int set_sequence_array_dest(char sequenceArray[16][4]);
+int check_param_sequence(char sequenceArray[16][4], operand* operandd, int opcode, int lineNum, int sourceOrDest);
 // ---------------------- secondpass fucntions ---------------------- //
 
 int secondpass_invoker(char*** dcImage, char*** icImage, label* labelTable, extentlabel** head, char* filename, int labelCount, int ic, int dc);

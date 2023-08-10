@@ -1,2 +1,2 @@
 .entry LENGTH
-.data 1234  ,24, 31, 54
+mov @r7,2

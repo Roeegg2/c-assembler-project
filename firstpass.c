@@ -357,16 +357,13 @@ int get_param_value(operand *op, char *token, int lineNum){
     if (token == NULL)
         op->addrMode = No_Operand;
     // not sure if can input + aswell, check that
-    else if (strspn(token, "+-012345678") == strlen(token))
-    {
+    else if (strspn(token, "+-012345678") == strlen(token)){
         op->val.numericVal = atoi(token);
         op->addrMode = Immediate;
     }
-    else if (token[0] == '@' && token[1] == 'r')
-    {
+    else if (token[0] == '@' && token[1] == 'r'){
         foo[0] = token[2];
-        if (strspn(foo, "012345678") == 1)
-        {
+        if (strspn(foo, "012345678") == 1){
             op->val.regNum = atoi(foo);
             op->addrMode = Register;
         }
@@ -414,37 +411,6 @@ int get_comma_param_cnt(char* line, int lineNum){
         return error_handler(Extra_Comma, lineNum); // extra comma at the end or at the start
     return paramCnt;
 }
-
-
-/* int get_comma_param_cnt(char* line, int lineNum){
-    int i, status1, status2, status3, paramCnt, commaCnt;
-
-    paramCnt = commaCnt = status1 = status2 = status3 = FALSE;
-
-    for (i = 0; line[i] != '\0'; i++){
-        if (line[i] == ','){
-            status3 = status2;
-            status2 = status1;
-            status1 = _COMMA;
-            commaCnt++;
-        }
-        else if (line[i] != ' ' && line[i] != '\t' && lastStatus != _CHAR){
-            status3 = status2;
-            status2 = status1;
-            status1 = _CHAR;
-            paramCnt++;
-        }
-        if (status1 == status2 == _COMMA)
-                return error_handler(Double_Comma, lineNum); // two commas in a row
-        else if (status1 == status3 == _CHAR)
-                return error_handler(Missing_Comma, lineNum); // two parameters in a row
-    }
-
-    if (paramCnt - commaCnt != 1)
-        return error_handler(Extra_Comma, lineNum); // extra comma at the end or at the start
-
-    return paramCnt;
-} */
 
 int is_extent_instruction(char* token){
     if (strcmp(token, ".entry") == 0)
@@ -506,17 +472,19 @@ int first_pass_invoker(char ***dcImage, char ***icImage, FILE **amFile, label **
                 add_data_word(dcImage, params, dc, paramCnt, lineNum);
         }
         else if ((commandCode = is_operation(token)) != -1){
-            operation op;
-            operand operand1, operand2;
+            if (get_comma_param_cnt(originalLine+strlen(token), lineNum) != -1){
+                operation op;
+                operand operand1, operand2;
 
-            op.opcode = commandCode;
+                op.opcode = commandCode;
 
-            get_param_value(&operand1, token, lineNum);
-            get_param_value(&operand2, token, lineNum);
-            set_operands(&op, &operand1, &operand2); // match operand1 and operand2 to the correct source and dest
+                get_param_value(&operand1, token, lineNum);
+                get_param_value(&operand2, token, lineNum);
+                set_operands(&op, &operand1, &operand2); // match operand1 and operand2 to the correct source and dest
             
-            add_first_op_word(icImage, &op, ic);                          // adding the first word of the operation
-            add_operand_words(icImage, labelTable, &op, ic, *labelCount); // adding the operation words
+                add_first_op_word(icImage, &op, ic);                          // adding the first word of the operation
+                add_operand_words(icImage, labelTable, &op, ic, *labelCount); // adding the operation words
+            }
         }
         else
             error_handler(Unknown_Command, lineNum);

@@ -151,8 +151,9 @@ int analyze_string(char* stringLine, int* stringConverted, int lineNum){
     stringLine[-1] = '\0'; // this line might cause problem: i need to check if it wont cause problem and if its even ok to do like that.
     stringLine[strlen(stringLine) - 1] = '\0';
 
-    for (i = 0; i < strlen(stringLine); i++)
+    for (i = 0; i < strlen(stringLine); i++){
         stringConverted[i] = stringLine[i];
+    }
     stringConverted[i] = 0;
 
     return i + 1;
@@ -200,12 +201,30 @@ int add_data_word(char ***dcImage, int *params, int *dc, int paramCnt, int lineN
     return TRUE;
 }
 
+int get_extent_label_type(extentlabel* head, char* labelName){
+    while (head != NULL){
+        if (strcmp(head->labelName, labelName) == 0)
+            return head->type;
+        head = head->next;
+    }
+
+    return FALSE;
+}
+
 // want to change implementation
-int add_extent_label(extentlabel **head, char **token, int type){
-    extentlabel *newNode;
-    extentlabel *temp;
+int add_extent_label(extentlabel** head, char** token, int type, int lineNum){
+    extentlabel* newNode;
+    extentlabel* temp;
+    int changemename;
     newNode = (extentlabel *)calloc(1, sizeof(extentlabel));
 
+    changemename = get_extent_label_type(*head, *token);
+    if (changemename != FALSE)
+        if (changemename == type)
+            warning_handler(Extent_Label_Already_Defined_Similarly, lineNum);
+        else
+            return error_handler(Extent_Label_Already_Defined_Differently, lineNum);
+            
     if ((*head) == NULL)
         (*head) = newNode;
 
@@ -222,6 +241,9 @@ int add_extent_label(extentlabel **head, char **token, int type){
 }
 
 int is_label(char **token, char *labelName, char *line, int lineNum){
+    if (strlen(*token)-1 > MAX_LABEL_LENGTH)
+        return error_handler(Label_Name_Length_Too_Long, lineNum);
+    
     if (LAST_CHARACTER(*token) != ':')
         return FALSE;
     else{
@@ -229,6 +251,8 @@ int is_label(char **token, char *labelName, char *line, int lineNum){
         strcpy(labelName, *token);
         *token = strtok(NULL, DELIMITERS);
     }
+    if (*token == NULL)
+        return error_handler(Blank_Label_Declaration, lineNum);
 
     if (is_extent_instruction(labelName) != FALSE || is_operation(labelName) != -1 || is_datastring_instruction(labelName) != FALSE)
         return error_handler(Illegal_Comma_Name_Saved_Word, lineNum);
@@ -238,6 +262,7 @@ int is_label(char **token, char *labelName, char *line, int lineNum){
 
     if (strspn(labelName, "012345678abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") != strlen(labelName))
         return error_handler(Illegal_Comma_Name_Illegal_Chars, lineNum);
+    
 
     return TRUE;
 }
@@ -348,16 +373,21 @@ int get_param_value(operand *op, char *token, int lineNum){
     if (token == NULL)
         op->addrMode = No_Operand;
     // not sure if can input + aswell, check that
-    else if (strspn(token, "+-012345678") == strlen(token)){
+    else if (strspn(token, "+-0123456789") == strlen(token)){
         op->val.numericVal = atoi(token);
         op->addrMode = Immediate;
     }
     else if (token[0] == '@' && token[1] == 'r'){
+        foo[0] = token[3];
+        if (strspn(foo, "0123456789") == 1)
+            return error_handler(Undefined_Register, lineNum);
         foo[0] = token[2];
-        if (strspn(foo, "012345678") == 1){
+        if (strspn(foo, "01234567") == 1){
             op->val.regNum = atoi(foo);
             op->addrMode = Register;
         }
+        else
+            return error_handler(Undefined_Register, lineNum);
         // return error
     }
     else{
@@ -490,7 +520,8 @@ int first_pass_invoker(char*** dcImage, char*** icImage, FILE** amFile, label** 
     char line[MAX_LINE_LENGTH], originalLine[MAX_LINE_LENGTH];
     char labelName[MAX_LABEL_LENGTH];
     char sourceSequenceArray[16][4], destSequenceArray[16][4];
-    int needtochangename, commandCode, lineNum, temp, isLabel;
+    int* counter;
+    int commandCode, lineNum, temp, isLabel;
 
     *dc = *ic = *labelCount = lineNum = 0;
     set_sequence_array_source(sourceSequenceArray);
@@ -500,12 +531,13 @@ int first_pass_invoker(char*** dcImage, char*** icImage, FILE** amFile, label** 
         strcpy(line, originalLine);
         token = strtok(line, DELIMITERS);
 
-        isLabel = is_label(&token, labelName, line, lineNum);
-        needtochangename = *ic + *dc;
+        isLabel = is_label(&token, labelName, line, lineNum); // NOTE: if label declaration is emtpy we get segmantation fault.
 
-        if ((commandCode = is_extent_instruction(token)) != FALSE)
-            add_extent_label(head, &token, commandCode);
-        
+        if ((commandCode = is_extent_instruction(token)) != FALSE){
+            token = strtok(NULL, DELIMITERS);
+            add_extent_label(head, &token, commandCode, lineNum);
+            counter = dc;
+        }
         else if ((commandCode = is_datastring_instruction(token)) != FALSE){
             int* params;
             int paramCnt;
@@ -513,6 +545,7 @@ int first_pass_invoker(char*** dcImage, char*** icImage, FILE** amFile, label** 
             paramCnt = call_analyzer(&token, &params, get_param_pointer(originalLine, LAST_CHARACTER(token)), lineNum, commandCode);
             if (paramCnt != -1)
                 add_data_word(dcImage, params, dc, paramCnt, lineNum);
+            counter = dc;
         }
         else if ((commandCode = is_operation(token)) != -1){
             if (get_comma_param_cnt(get_param_pointer(originalLine, LAST_CHARACTER(token)), lineNum) != -1){
@@ -521,22 +554,28 @@ int first_pass_invoker(char*** dcImage, char*** icImage, FILE** amFile, label** 
 
                 op.opcode = commandCode;
 
-                get_param_value(&operand1, token, lineNum);
-                get_param_value(&operand2, token, lineNum);
-                set_operands(&op, &operand1, &operand2); // match operand1 and  operand2 to the correct source and dest
+                if (get_param_value(&operand1, token, lineNum) != ERROR && get_param_value(&operand2, token, lineNum) != ERROR){
+                    set_operands(&op, &operand1, &operand2); // match operand1 and  operand2 to the correct source and dest
 
-                if (check_param_sequence(sourceSequenceArray, op.sourceOperand, op.opcode, lineNum, _SOURCE) == TRUE && 
-                check_param_sequence(destSequenceArray, op.destOperand, op.opcode, lineNum, _DEST) == TRUE){
-                    add_first_op_word(icImage, &op, ic);                          // adding the first word of the operation
-                    add_operand_words(icImage, labelTable, &op, ic, *labelCount); // adding the operation words
+                    if (check_param_sequence(sourceSequenceArray, op.sourceOperand, op.opcode, lineNum, _SOURCE) == TRUE && 
+                    check_param_sequence(destSequenceArray, op.destOperand, op.opcode, lineNum, _DEST) == TRUE){
+                        add_first_op_word(icImage, &op, ic);                          // adding the first word of the operation
+                        add_operand_words(icImage, labelTable, &op, ic, *labelCount); // adding the operation words
+                }
                 }
             }
+            counter = ic;
         }
         else
             error_handler(Unknown_Command, lineNum);
 
-        if (isLabel == TRUE) // see question 1
-            add_label(labelTable, labelName, labelCount, needtochangename, lineNum);
+        if (isLabel == TRUE){ // see question 1
+            if (commandCode == _ENTRY || commandCode == _EXTERN)
+                warning_handler(Label_Points_At_ExternEntry, lineNum);
+            else
+                add_label(labelTable, labelName, labelCount, *counter, lineNum); // not sure if its right to pass into the function needtochangename
+            // NOTE: if label there is not command, and then counter isnt pointing anywhere valid, what do we do?
+        }
     }
 
     // close files
@@ -563,6 +602,18 @@ int check_param_sequence(char sequenceArr[16][4], operand* operandd, int opcode,
     return TRUE;
 }
 
+int warning_handler(int warningCode, int lineNum){
+    switch (warningCode){
+    case Label_Points_At_ExternEntry:
+        printf("Warning: Label points at .extern/.entry. Assembler will ignore the label. Line %d\n", lineNum);
+        break;
+    case Extent_Label_Already_Defined_Similarly:
+        printf("Warning: Extent label already defined with same type. Line %d\n", lineNum);
+        break;
+    }
+
+    return TRUE;
+}
 
 int error_handler(int errorCode, int lineNum){
     switch (errorCode){
@@ -605,6 +656,18 @@ int error_handler(int errorCode, int lineNum){
     case Illegal_Comma_Name_Illegal_Chars:
         printf("Error: Illegal label name. Label name can only contain letters and numbers. Line %d\n", lineNum);
         break;
+    case Extent_Label_Already_Defined_Differently:
+        printf("Error: Extent label already defined a different type. Line %d\n", lineNum);
+        break;
+    case Label_Name_Length_Too_Long:
+        printf("Error: Label name exceeds max length. Line %d\n", lineNum);
+        break;
+    case Undefined_Register:
+        printf("Error: Undefined register. Line %d\n", lineNum);
+        break;
+    case Blank_Label_Declaration:
+        printf("Error: No code found after label declaration. Line %d\n", lineNum);
+        break;
     }
 
     return ERROR;
@@ -639,9 +702,10 @@ int main(int argc, char **argv){
         PRINTWORDS(dcImage, dc, ic);
         printf("label table:\n");
         PRINTLABEL(labelTable, labelCount);
+
+        // close files
+        // free memory
     }
-    // close files
-    // free memory
 }
 
 /* #region Printing Functions*/
@@ -699,4 +763,13 @@ FILE* open_file(char* filename, char* ending, char* mode){
 
 /** QUESTIONS: 
  * 1. if encountered illegal label name, should we only ignore the label or ignore the whole line?
+*/
+
+/** NOTES:
+ * 1. change all atoi uses into strtol or something like that
+ * 2. Need to read and understand ARE.
+ * 3. maybe instead of analyzing and reporting errors from each function, create a sub function to be called, and that 
+ *   function's purpose is to check if there is an error, and call error_handler accordingly. This could maybe help 
+ *   with keeping the code more modular and functions shorter.
+ * 4. Need to remove structs from the header file.
 */

@@ -3,7 +3,7 @@
 
 #include "shared.h"
 
-// check all of these and make sure they are right!
+/* check all of these and make sure they are right! */
 #define SIZE_OF_WORD 12
 
 #define MAX_DATA_LENGTH 10 
@@ -50,18 +50,18 @@ typedef struct operand{
 
 typedef struct operation{
     int opcode;
-    // char paramSequence[2];
+    /* char paramSequence[2] */
     operand* sourceOperand;
     operand* destOperand;
 } operation;
 
-int error_handler(int errorCode, int lineNum);
-int warning_handler(int warningCode, int lineNum);
+int fp_error_handler(int errorCode, int lineNum);
+int fp_warning_handler(int warningCode, int lineNum);
 
 int analyze_data(char** token, int *params, int lineNum);
 int analyze_string(char* stringLine, int* stringConverted, int lineNum);
 
-int get_type_val(label** labelTable, operand* operandd, int* val, int labelCount); // GO OVER THIS AND REWRITE THE WHOLE MECHANISM THIS FUNCITON IS PART OF
+int get_type_val(label** labelTable, operand* operandd, int* val, int labelCount); /* GO OVER THIS AND REWRITE THE WHOLE MECHANISM THIS FUNCITON IS PART OF */
 int get_operand_value(operand* op, char* token, int lineNum);
 int set_operands(operation* op, operand *operand1, operand *operand2);
 
@@ -69,7 +69,7 @@ int get_isolated_word(operand* operandd, char* binary, int val, int status);
 int get_register_word(char* binary, int sourceVal, int destVal);
 int add_operand_words(char ***icImage, label **labelTable, operation *op, int *ic, int labelCount);
 int add_first_op_word(char ***icImage, operation *op, int *ic);
-int add_are(char *binary, char *are); //might remove this function 
+int add_are(char *binary, char *are); /* might remove this function  */
 int get_operand_addrmode(operand *operandd, char *binary, int startingPoint);
 
 int add_data_word(char*** dcImage, int* params, int* dc, int paramCnt, int lineNum);
@@ -85,7 +85,6 @@ int is_datastring_instruction(char* token);
 int is_extent_instruction(char* token);
 int call_datastring_analyzer(char** lineToken, int** params, char* orgLineToken, int lineNum, int commandCode);
 
-int find_label(label* labelTable, char* labelName, int labelCount);
 int is_label(char** token, char* labelName, char* line, int lineNum);
 int add_label(label **labelTable, char *labelName, int *labelCount, int counterValue, int lineNum);
 
@@ -94,7 +93,6 @@ int get_extent_label_type(extentlabel* head, char* labelName);
 
 int add_one(char binary[]);
 int flip_negative(char binary[]);
-int convert_to_binary(char binary[], int number, int size);
 
 int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, extentlabel** head, char* filename, int* dc, int* ic, int* labelCount);
 

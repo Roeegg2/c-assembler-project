@@ -34,6 +34,8 @@ int invoke_preassembler(char* filename){
     free_macros(head);
     fclose(asFile); 
     fclose(amFile);
+
+    return TRUE;
 }
 
 int write_line(FILE** amFile, macro* head, char* token, char* writeLine){
@@ -47,7 +49,7 @@ int write_line(FILE** amFile, macro* head, char* token, char* writeLine){
     return TRUE;
 }
 
-// need to name this function
+  /* need to name this function */
 int func(FILE** asFile, char* originalLine, char* line, char** token, int* lineNum){
     do {
         fgets(originalLine, MAX_LINE_LENGTH, *asFile);
@@ -55,12 +57,14 @@ int func(FILE** asFile, char* originalLine, char* line, char** token, int* lineN
         *token = strtok(line, DELIMITERS);
         (*lineNum)++;
     } while (originalLine[0] == ';' || *token == NULL);
+
+    return TRUE;
 }
 
 int get_macro_code(FILE** asFile, macro* head, char* originalLine, char* line, int* lineNum, int* status){
     char* token;
 
-    // thinking of making this and a couple of other lines a function to reduce code duplication
+      /* thinking of making this and a couple of other lines a function to reduce code duplication */
     func(asFile, originalLine, line, &token, lineNum);
     while (strcmp(token, "endmcro") != 0){
         head->code = (char*)realloc(head->code, (strlen(head->code) + strlen(originalLine) + 1) * sizeof(char));
@@ -123,9 +127,8 @@ int check_for_macro_erros(char** token, macro* head, int* status, int lineNum){
     if (*token != NULL)
         *status = error_handler(Extratanatious_Text_After_Macro_Declaration, lineNum);
 
-    // uncomment this when merging with main
     /* if (is_operation() != FALSE || is_guidanceshit() != FALSE || is_guidancelabelshit() != FALSE)
-        *status = error_handler(Macro_Name_Is_Saved_Word, lineNum); // macro name is a saved word, which isnt right */
+        *status = error_handler(Macro_Name_Is_Saved_Word, lineNum);  macro name is a saved word, which isnt right */
 
     return TRUE;
 }
@@ -147,36 +150,4 @@ int error_handler(int errorCode, int lineNum){
     }
 
     return ERROR;
-}
-
-int main(){
-    invoke_preassembler("test");
-    return 0;
-}
-
-
-/*--------------------------------------------- UTILS FUNCTIONS ---------------------------------------------*/
-
-int read_input_file(FILE** sourceFile, char* filename, char* ending, char* line, int* lineNum){
-    if (*lineNum == 0)    
-        *sourceFile = open_file(filename, ending, "r"); 
-
-    CHECK_ALLOCATION_ERROR(*sourceFile);
-
-    if (fgets(line, MAX_LINE_LENGTH, *sourceFile) != NULL){
-        (*lineNum)++;
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-FILE* open_file(char* filename, char* ending, char* mode){
-    char foo[MAX_FILENAME_LENGTH]; // add max for file extension as well
-
-    strcpy(foo, filename);
-    strcat(foo, ending);
-    FILE* file = fopen(foo, mode); // change that "a" to mode when done testing
-
-    return file;
 }

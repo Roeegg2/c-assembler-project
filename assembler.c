@@ -57,7 +57,9 @@ int main(int argc, char **argv){
         printf("label table:\n");
         PRINTLABEL(labelTable, labelCount);
 
-        // close files
-        // free memory
+        /* close files */
+        /* free memory */
     }
+
+    return 0;
 }

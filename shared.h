@@ -1,8 +1,10 @@
+#ifndef _SHARED_H
+#define _SHARED_H
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// change these later
+/* change these later */
 #define MAX_LINE_LENGTH 100 
 #define MAX_LABEL_LENGTH 31
 #define MAX_FILENAME_LENGTH 20
@@ -21,7 +23,7 @@
 typedef struct label{
     char labelName[MAX_LABEL_LENGTH];
     int line;
-    int type; // : 2
+    int type;
     int address; 
 } label;
 
@@ -34,3 +36,8 @@ typedef struct extentlabel{
     int type;
     struct extentlabel* next;
 } extentlabel;
+
+int find_label(label* labelTable, char* labelName, int labelCount);
+int convert_to_binary(char binary[], int number, int size);
+
+#endif

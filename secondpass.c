@@ -2,24 +2,12 @@
 #include "shared.h"
 #include "utils.h"
 
-/*-------------------------------------------- NON SECONDPASS FUNCTIONS FOR TESTING --------------------------------------*/
-FILE* open_file(char* filename, char* ending, char* mode){
-    char foo[MAX_FILENAME_LENGTH]; // add max for file extension as well
-
-    strcpy(foo, filename);
-    strcat(foo, ending);
-    FILE* file = fopen(foo, mode); // change that "a" to mode when done testing
-
-    return file;
-}
-
-/*------------------------------------------------------------------------------------------------------------------------*/
 /**NOTES TO SELF:
  * 1. if command is wrong but has a lable pointing at it, should i add the label or not?
 */
 /* secondpass_invoker(&dcImage, &icImage, labelTable, &head, filename, dc, ic, labelCount); */
 
-int secondpass_invoker(char*** dcImage, char*** icImage, label* labelTable, extentlabel** head, char* filename, int labelCount, int ic, int dc){
+int invoke_secondpass(char*** dcImage, char*** icImage, label* labelTable, extentlabel** head, char* filename, int labelCount, int ic, int dc){
     extentlabel* temp;
     int errorFound;
     
@@ -37,9 +25,9 @@ int secondpass_invoker(char*** dcImage, char*** icImage, label* labelTable, exte
     return TRUE;
 }
 
-// swap each label with its address, plus error reporting 
+  /* swap each label with its address, plus error reporting  */
 int map_labels(char*** icImage, label* labelTable, int* errorFound, int ic, int labelCount){
-    // go over the icImage and if there is a label (aka an element in the array which its first char isnt 0 or 1)
+      /* go over the icImage and if there is a label (aka an element in the array which its first char isnt 0 or 1) */
     int address, i;
 
     for (i = 0; i < ic; i++){
@@ -49,11 +37,11 @@ int map_labels(char*** icImage, label* labelTable, int* errorFound, int ic, int 
             if (address != FALSE){
                 (*icImage)[i] = (char*)realloc((*icImage)[i], sizeof(char) * 12);
                 convert_to_binary((*icImage)[i], address, 10);
-                strcat((*icImage)[i], "10"); // adding ARE
+                strcat((*icImage)[i], "10");   /* adding ARE */
             }
             else{
-                *errorFound = TRUE; // move this to error_handler() as well
-                return FALSE; // return error_handler() - label declared but not found
+                *errorFound = TRUE;   /* move this to error_handler() as well */
+                return FALSE;   /* return error_handler() - label declared but not found */
             }
         }
     }
@@ -67,10 +55,12 @@ int write_ob_file(char** icImage, label* labelTable, char* filename, int counter
 
     obFile = open_file(filename, ".ob", "w");
 
-    for (i = 0; i < counter; i++) // add error detection if there is a label unconvered
+    for (i = 0; i < counter; i++)   /* add error detection if there is a label unconvered */
         fprintf(obFile, "%s\n", icImage[i]);
 
     fclose(obFile);
+
+    return TRUE;
 }
 
 int write_extent_file(extentlabel* head, char* filename){
@@ -88,6 +78,8 @@ int write_extent_file(extentlabel* head, char* filename){
 
         head = head->next;
     }
+
+    return TRUE;
 }
 
 int print_extern(extentlabel head, FILE* extFile){
@@ -108,6 +100,8 @@ int complete_extent_data(char*** icImage, label* labelTable, extentlabel** head,
 
         (*head) = (*head)->next;
     }   
+
+    return TRUE;
 }
 
 int get_data_extern(char*** icImage, extentlabel** head, int* errorFound, int ic){
@@ -117,13 +111,13 @@ int get_data_extern(char*** icImage, extentlabel** head, int* errorFound, int ic
         if (strcmp((*head)->labelName, (*icImage)[i]) == 0){
             (*head)->address.count++;
             (*head)->address.addr = (int*)realloc((*head)->address.addr, sizeof(int) * ((*head)->address.count));
-            (*head)->address.addr[(*head)->address.count-1] = i+100; //not sure this is the correct address i should be assigning 
+            (*head)->address.addr[(*head)->address.count-1] = i+100;  /* not sure this is the correct address i should be assigning */ 
             strcpy((*icImage)[i], "000000000001");
         }
     }
 
-    // *errorFound = TRUE; // move this to error_handler() as well
-    return FALSE; // return error_handler() - return warning - label declared as extern but is not used in code 
+      /* *errorFound = TRUE;   move this to error_handler() as well */
+    return FALSE;   /* return error_handler() - return warning - label declared as extern but is not used in code  */
 }
 
 
@@ -138,6 +132,6 @@ int get_data_entry(label* labelTable, extentlabel** head, int* errorFound, int l
         }
     }
 
-    *errorFound = TRUE; // move this to error_handler() as well
-    return FALSE; // return error_handler() - no such label found 
+    *errorFound = TRUE;   /* move this to error_handler() as well */
+    return FALSE;   /* return error_handler() - no such label found  */
 }

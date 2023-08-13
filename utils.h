@@ -1,3 +1,5 @@
+#ifndef _UTILS_H
+#define _UTILS_H
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,3 +12,4 @@ int add_to_counterArray(char ***counterArray, int *counter, char *toAdd);
 
 /*DEBUGGING FUNCTIONS*/
 
+#endif

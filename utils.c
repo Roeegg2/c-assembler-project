@@ -7,7 +7,7 @@ int read_input_file(FILE** sourceFile, char* filename, char* ending, char* line,
         *sourceFile = open_file(filename, ending, "r"); 
 
     if (*sourceFile == NULL)
-        return error_handler(1, *lineNum);
+        return -1; /* error_handler(1, *lineNum); */
 
     if (fgets(line, MAX_LINE_LENGTH, *sourceFile) != NULL){
         (*lineNum)++;
@@ -18,11 +18,12 @@ int read_input_file(FILE** sourceFile, char* filename, char* ending, char* line,
 }
 
 FILE* open_file(char* filename, char* ending, char* mode){
-    char foo[MAX_FILENAME_LENGTH]; // add max for file extension as well
+    FILE* file;
+    char foo[MAX_FILENAME_LENGTH];  /* add max for file extension as well */
 
     strcpy(foo, filename);
     strcat(foo, ending);
-    FILE* file = fopen(foo, mode); // change that "a" to mode when done testing
+    file = fopen(foo, mode);  /* change that "a" to mode when done testing */
 
     return file;
 }

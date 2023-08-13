@@ -2,14 +2,11 @@
 #include "shared.h"
 #include "utils.h"
 
-/*------------------------------------------------------------- FUNCTIONS NOT IN USE RIGHT NOW, BUT NEED LATER ----------------------------------*/
-/* ----------------------------------------------------------------- FUNCTIONS IN USE ------------------------------------------------------------------- */
-
 /*function that receives a string, a number and a size, and writes into the string the binary */
 /* what is counter type? maybe switch (*labelTable) with something more readable? */
-// might break when number entered is negative
+/* might break when number entered is negative */
 int convert_to_binary(char binary[], int number, int size){
-    int isNegative;
+    int isNegative, i;
 
     memset(binary, '0', size);
     binary[size] = '\0';
@@ -18,7 +15,7 @@ int convert_to_binary(char binary[], int number, int size){
     if (isNegative == 1)
         number *= -1;
 
-    int i = size - 1;
+    i = size - 1;
     while (number > 0){
         binary[i] = '0' + number % 2;
         number /= 2;
@@ -32,10 +29,10 @@ int convert_to_binary(char binary[], int number, int size){
     return 0;
 }
 
-// make this nicer
+/* make this nicer */
 int flip_negative(char binary[]){
     int i;
-    // flipping all bits
+    /* flipping all bits */
     for (i = 0; i < strlen(binary); i++)
         binary[i] = (binary[i] == '0') ? '1' : '0';
 
@@ -48,7 +45,7 @@ int add_one(char binary[]){
     carry = 1;
     i = strlen(binary) - 1;
 
-    // adding one
+    /* adding one */
     while (carry == 1 && i >= 0){
         if (binary[i] == '0'){
             binary[i] = '1';
@@ -62,11 +59,10 @@ int add_one(char binary[]){
 }
 
 int add_label(label **labelTable, char *labelName, int *labelCount, int counterValue, int lineNum){
-    int i;
     (*labelTable) = (label *)realloc((*labelTable), sizeof(label) * ((*labelCount) + 1));
 
     if (find_label(*labelTable, labelName, *labelCount) != FALSE)
-        return error_handler(Label_Already_Defined, lineNum);
+        return fp_error_handler(Label_Already_Defined, lineNum);
 
     strcpy((*labelTable)[*labelCount].labelName, labelName);
     (*labelTable)[*labelCount].line = lineNum;
@@ -85,14 +81,14 @@ int get_operand_addrmode(operand *operandd, char *binary, int startingPoint){
     return 0;
 }
 
-// might remove this function
+/* might remove this function */
 int add_are(char *binary, char *are){
     strcat(binary, "00");
     return 0;
 }
 
 int add_first_op_word(char ***icImage, operation *op, int *ic){
-    char binary[13]; // 12 binary digits + 1 null terminator
+    char binary[13]; /* 12 binary digits + 1 null terminator */
 
     memset(binary, '\0', 13);
 
@@ -147,10 +143,10 @@ int analyze_string(char* stringLine, int* stringConverted, int lineNum){
     int i;
 
     if (stringLine[0] != '\"' || stringLine[strlen(stringLine) - 1] != '\"')
-        return error_handler(Illegal_String_Declaration, lineNum);
+        return fp_error_handler(Illegal_String_Declaration, lineNum);
 
     stringLine++;
-    stringLine[-1] = '\0'; // this line might cause problem: i need to check if it wont cause problem and if its even ok to do like that.
+    stringLine[-1] = '\0'; /* this line might cause problem: i need to check if it wont cause problem and if its even ok to do like that. */
     stringLine[strlen(stringLine) - 1] = '\0';
 
     for (i = 0; i < strlen(stringLine); i++){
@@ -159,7 +155,7 @@ int analyze_string(char* stringLine, int* stringConverted, int lineNum){
     stringConverted[i] = 0;
 
     return i + 1;
-    // write_data(stringConverted, strlen(stringLine)+1, lineNum);
+    /* write_data(stringConverted, strlen(stringLine)+1, lineNum); */
 }
 
 int analyze_data(char** token, int *params, int lineNum){
@@ -172,7 +168,7 @@ int analyze_data(char** token, int *params, int lineNum){
                 params[i] = atoi((*token));
             }
             else
-                return error_handler(Invalid_Parameter_Data, lineNum); // input isnt a number
+                return fp_error_handler(Invalid_Parameter_Data, lineNum); /* input isnt a number */
         }
         (*token) = strtok(NULL, PARAM_DELIMITERS);
         i++;
@@ -203,7 +199,7 @@ int get_extent_label_type(extentlabel* head, char* labelName){
     return FALSE;
 }
 
-// want to change implementation
+/* want to change implementation */
 int add_extent_label(extentlabel** head, char** token, int type, int lineNum){
     extentlabel* newNode;
     extentlabel* temp;
@@ -211,12 +207,12 @@ int add_extent_label(extentlabel** head, char** token, int type, int lineNum){
     newNode = (extentlabel *)calloc(1, sizeof(extentlabel));
 
     changemename = get_extent_label_type(*head, *token);
-    if (changemename != FALSE)
+    if (changemename != FALSE){
         if (changemename == type)
-            warning_handler(Extent_Label_Already_Defined_Similarly, lineNum);
+            fp_warning_handler(Extent_Label_Already_Defined_Similarly, lineNum);
         else
-            return error_handler(Extent_Label_Already_Defined_Differently, lineNum);
-            
+            return fp_error_handler(Extent_Label_Already_Defined_Differently, lineNum);
+    }
     if ((*head) == NULL)
         (*head) = newNode;
 
@@ -230,11 +226,13 @@ int add_extent_label(extentlabel** head, char** token, int type, int lineNum){
     strcpy(newNode->labelName, *token);
     newNode->type = type;
     newNode->next = NULL;
+
+    return TRUE;
 }
 
 int is_label(char **token, char *labelName, char *line, int lineNum){
     if (strlen(*token)-1 > MAX_LABEL_LENGTH)
-        return error_handler(Label_Name_Length_Too_Long, lineNum);
+        return fp_error_handler(Label_Name_Length_Too_Long, lineNum);
     
     if (LAST_CHARACTER(*token) != ':')
         return FALSE;
@@ -244,16 +242,16 @@ int is_label(char **token, char *labelName, char *line, int lineNum){
         *token = strtok(NULL, PARAM_DELIMITERS);
     }
     if (*token == NULL)
-        return error_handler(Blank_Label_Declaration, lineNum);
+        return fp_error_handler(Blank_Label_Declaration, lineNum);
 
     if (is_extent_instruction(labelName) != FALSE || is_operation(labelName) != -1 || is_datastring_instruction(labelName) != FALSE)
-        return error_handler(Illegal_Comma_Name_Saved_Word, lineNum);
+        return fp_error_handler(Illegal_Comma_Name_Saved_Word, lineNum);
     
     if (!(65 <= *labelName && *labelName <= 90) && !(97 <= *labelName && *labelName <= 122))
-        return error_handler(Illegal_Comma_Name_First_Char, lineNum);
+        return fp_error_handler(Illegal_Comma_Name_First_Char, lineNum);
 
     if (strspn(labelName, "012345678abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") != strlen(labelName))
-        return error_handler(Illegal_Comma_Name_Illegal_Chars, lineNum);
+        return fp_error_handler(Illegal_Comma_Name_Illegal_Chars, lineNum);
     
 
     return TRUE;
@@ -264,12 +262,12 @@ int find_label(label *labelTable, char *labelName, int labelCount){
 
     for (i = 0; i < labelCount; i++)
         if (strcmp(labelTable[i].labelName, labelName) == 0)
-            return labelTable[i].address; // need to return the address plus 100
+            return labelTable[i].address; /* need to return the address plus 100 */
 
     return FALSE;
 }
 
-// adds the operand words to the operation array
+/* adds the operand words to the operation array */
 int add_operand_words(char ***icImage, label **labelTable, operation *op, int *ic, int labelCount){
     int sourceVal, destVal;
     int sourceStatus, destStatus;
@@ -293,14 +291,13 @@ int add_operand_words(char ***icImage, label **labelTable, operation *op, int *i
     return TRUE;
 }
 
-// done
 int get_operand_value(operand *op, char *token, int lineNum){
     char foo[1];
 
     token = strtok(NULL, PARAM_DELIMITERS);
     if (token == NULL)
         op->addrMode = No_Operand;
-    // not sure if can input + aswell, check that
+    /* not sure if can input + aswell, check that */
     else if (strspn(token, "+-0123456789") == strlen(token)){
         op->val.numericVal = atoi(token);
         op->addrMode = Immediate;
@@ -308,15 +305,15 @@ int get_operand_value(operand *op, char *token, int lineNum){
     else if (token[0] == '@' && token[1] == 'r'){
         foo[0] = token[3];
         if (strspn(foo, "0123456789") == 1)
-            return error_handler(Undefined_Register, lineNum);
+            return fp_error_handler(Undefined_Register, lineNum);
         foo[0] = token[2];
         if (strspn(foo, "01234567") == 1){
             op->val.regNum = atoi(foo);
             op->addrMode = Register;
         }
         else
-            return error_handler(Undefined_Register, lineNum);
-        // return error
+            return fp_error_handler(Undefined_Register, lineNum);
+        /* return error */
     }
     else{
         strcpy(op->val.labelName, token);
@@ -326,7 +323,7 @@ int get_operand_value(operand *op, char *token, int lineNum){
     return TRUE;
 }
 
-// GO OVER THIS AND REWRITE THE WHOLE MECHANISM THIS FUNCITON IS PART OF
+/* GO OVER THIS AND REWRITE THE WHOLE MECHANISM THIS FUNCITON IS PART OF */
 int get_type_val(label **labelTable, operand *operandd, int *val, int labelCount){
     if (operandd == NULL)
         return FALSE;
@@ -351,7 +348,7 @@ int get_register_word(char* binary, int sourceVal, int destVal){
 
     convert_to_binary(binary, sourceVal, 5);
     convert_to_binary(binary + 5, destVal, 5);
-    binary[10] = '0'; // might not work sometime maybe? need to check this
+    binary[10] = '0'; /* might not work sometime maybe? need to check this */
     binary[11] = '0';
 
     return TRUE;
@@ -365,10 +362,10 @@ int get_isolated_word(operand *operandd, char* binary, int val, int status){
     if (operandd->addrMode == Register)
         get_register_word(binary, val, 0);
     else if (operandd->addrMode == Direct)
-        strcpy(binary, operandd->val.labelName); // binary size is too small
+        strcpy(binary, operandd->val.labelName); /* binary size is too small */
     else{
         convert_to_binary(binary, val, 10);
-        binary[10] = '0'; // keep getting segmentation fault here sometime!
+        binary[10] = '0'; /* keep getting segmentation fault here sometime! */
         binary[11] = '0';
     }
 
@@ -413,16 +410,16 @@ int get_comma_param_cnt(char* line, int lineNum){
         }
         if (status1 == status2 && status1 != FALSE){
             if (status1 == _COMMA)
-                return error_handler(Double_Comma, lineNum); // two commas in a row
+                return fp_error_handler(Double_Comma, lineNum);   /* two commas in a row */
             else if (status1 == _CHAR)
-                return error_handler(Missing_Comma, lineNum); // two parameters in a row
+                return fp_error_handler(Missing_Comma, lineNum);   /* two parameters in a row */
         }
         i++;
         if (commaCnt > paramCnt)
-            return error_handler(Extra_Comma, lineNum);
+            return fp_error_handler(Extra_Comma, lineNum);
     }
     if (paramCnt == commaCnt)
-        return error_handler(Extra_Comma, lineNum); // extra comma at the end or at the start
+        return fp_error_handler(Extra_Comma, lineNum);   /* extra comma at the end or at the start */
     return paramCnt;
 }
 
@@ -445,7 +442,7 @@ int is_datastring_instruction(char* token){
 }
 
 int call_datastring_analyzer(char** lineToken, int** params, char* orgLineToken, int lineNum, int commandCode){    
-    *params = (int*)calloc(1, sizeof(int)); // move this to a different function
+    *params = (int*)calloc(1, sizeof(int));   /* move this to a different function */
     
     *lineToken = strtok(NULL, PARAM_DELIMITERS);
 
@@ -457,7 +454,7 @@ int call_datastring_analyzer(char** lineToken, int** params, char* orgLineToken,
     return analyze_string(*lineToken, *params, lineNum);
 }
 
-// get the pointer to the first parameter in the line
+  /* get the pointer to the first parameter in the line */
 char* get_param_pointer(char* orgLineToken, char toFind){
     int i;
     i = 0;
@@ -488,6 +485,8 @@ int set_sequence_array_dest(char sequenceArray[16][4]){
     strcpy(sequenceArray[Jsr], " 35\0");
     strcpy(sequenceArray[Rts], "0  \0");
     strcpy(sequenceArray[15], "0  \0");
+
+    return TRUE;
 }
 
 int set_sequence_array_source(char sequenceArray[16][4]){
@@ -507,9 +506,11 @@ int set_sequence_array_source(char sequenceArray[16][4]){
     strcpy(sequenceArray[Jsr], "0  \0");
     strcpy(sequenceArray[Rts], "0  \0");
     strcpy(sequenceArray[Stop], "0  \0");
-}
 
-// try cleaning up and bit and making this functions more readable and more focused
+    return TRUE;
+}
+ 
+  /* try cleaning up and bit and making this functions more readable and more focused */
 int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, extentlabel** head, char* filename, int* dc, int* ic, int* labelCount){
     FILE* amFile;
     char* token;
@@ -517,7 +518,7 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
     char labelName[MAX_LABEL_LENGTH];
     char sourceSequenceArray[16][4], destSequenceArray[16][4];
     int* counter;
-    int commandCode, lineNum, temp, isLabel;
+    int commandCode, lineNum, isLabel;
 
     *dc = *ic = *labelCount = lineNum = 0;
     set_sequence_array_source(sourceSequenceArray);
@@ -527,7 +528,7 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
         strcpy(line, originalLine);
         token = strtok(line, PARAM_DELIMITERS);
 
-        isLabel = is_label(&token, labelName, line, lineNum); // NOTE: if label declaration is emtpy we get segmantation fault.
+        isLabel = is_label(&token, labelName, line, lineNum);   /* NOTE: if label declaration is emtpy we get segmantation fault. */
 
         if ((commandCode = is_extent_instruction(token)) != FALSE){
             token = strtok(NULL, PARAM_DELIMITERS);
@@ -551,30 +552,30 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
                 op.opcode = commandCode;
 
                 if (get_operand_value(&operand1, token, lineNum) != ERROR && get_operand_value(&operand2, token, lineNum) != ERROR){
-                    set_operands(&op, &operand1, &operand2); // match operand1 and  operand2 to the correct source and dest
+                    set_operands(&op, &operand1, &operand2);   /* match operand1 and  operand2 to the correct source and dest */
 
                     if (check_param_sequence(sourceSequenceArray, op.sourceOperand, op.opcode, lineNum, _SOURCE) == TRUE && check_param_sequence(destSequenceArray, op.destOperand, op.opcode, lineNum, _DEST) == TRUE){
-                        add_first_op_word(icImage, &op, ic);                          // adding the first word of the operation
-                        add_operand_words(icImage, labelTable, &op, ic, *labelCount); // adding the operation words
+                        add_first_op_word(icImage, &op, ic);                            /* adding the first word of the operation */
+                        add_operand_words(icImage, labelTable, &op, ic, *labelCount);   /* adding the operation words */
                     }
                 }
             }
             counter = ic;
         }
         else
-            error_handler(Unknown_Command, lineNum);
+            fp_error_handler(Unknown_Command, lineNum);
 
-        if (isLabel == TRUE){ // see question 1
+        if (isLabel == TRUE){
             if (commandCode == _ENTRY || commandCode == _EXTERN)
-                warning_handler(Label_Points_At_ExternEntry, lineNum);
+                fp_warning_handler(Label_Points_At_ExternEntry, lineNum);
             else
-                add_label(labelTable, labelName, labelCount, *counter, lineNum); // not sure if its right to pass into the function needtochangename
-            // NOTE: if label there is not command, and then counter isnt pointing anywhere valid, what do we do?
+                add_label(labelTable, labelName, labelCount, *counter, lineNum);   /* not sure if its right to pass into the function needtochangename */
+              /* NOTE: if label there is not command, and then counter isnt pointing anywhere valid, what do we do? */
         }
     }
 
-    // close files
-    // free memory
+      /* close files */
+      /* free memory */
     return TRUE;
 }
 
@@ -588,16 +589,16 @@ int check_param_sequence(char sequenceArr[16][4], operand* operandd, int opcode,
     while (sequenceArr[opcode][j] != '\0' && (*sequenceArr)[j] != addrMode)
         j++;
     
-    if (sequenceArr[opcode][j] == '\0')
+    if (sequenceArr[opcode][j] == '\0'){
         if (sourceOrDest == _SOURCE)
-            return error_handler(Invalid_Source_Sequence, lineNum);
+            return fp_error_handler(Invalid_Source_Sequence, lineNum);
         else
-            return error_handler(Invalid_Dest_Sequence, lineNum);
-
+            return fp_error_handler(Invalid_Dest_Sequence, lineNum);
+    }
     return TRUE;
 }
 
-int warning_handler(int warningCode, int lineNum){
+int fp_warning_handler(int warningCode, int lineNum){
     switch (warningCode){
     case Label_Points_At_ExternEntry:
         printf("Warning: Label points at .extern/.entry. Assembler will ignore the label. Line %d\n", lineNum);
@@ -610,7 +611,7 @@ int warning_handler(int warningCode, int lineNum){
     return TRUE;
 }
 
-int error_handler(int errorCode, int lineNum){
+int fp_error_handler(int errorCode, int lineNum){
     switch (errorCode){
     case Unknown_Command:
         printf("Error: Unknown command in line %d\n", lineNum);
@@ -676,7 +677,7 @@ int error_handler(int errorCode, int lineNum){
  * 1. change all atoi uses into strtol or something like that
  * 2. Need to read and understand ARE.
  * 3. maybe instead of analyzing and reporting errors from each function, create a sub function to be called, and that 
- *   function's purpose is to check if there is an error, and call error_handler accordingly. This could maybe help 
+ *   function's purpose is to check if there is an error, and call fp_error_handler accordingly. This could maybe help 
  *   with keeping the code more modular and functions shorter.
  * 4. Need to remove structs from the header file.
 */

@@ -1,29 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <limits.h>
+#include "shared.h"
 
-#define TRUE 1
-#define FALSE 0
-#define MAX_LABEL_LENGTH 31
-#define MAX_FILENAME_LENGTH 20
-
-#define _ENTRY 3
-#define _EXTERN 4
-
-typedef struct label{
-    char labelName[MAX_LABEL_LENGTH];
-    int line;
-    int type; // : 2
-    int address; 
-} label;
-
-typedef struct extentlabel{
-    char labelName[MAX_LABEL_LENGTH];
-    struct{
-        int* addr;
-        int count;
-    } address;
-    int type;
-    struct extentlabel* next;
-} extentlabel;
+int secondpass_invoker(char*** dcImage, char*** icImage, label* labelTable, extentlabel** head, char* filename, int labelCount, int ic, int dc);
+int map_labels(char*** icImage, label* labelTable, int* errorFound, int ic, int labelCount);
+int write_ob_file(char** counterArray, label* labelTable, char* filename, int counter);
+int write_extent_file(extentlabel* head, char* filename);
+int complete_extent_data(char*** icImage, label* labelTable, extentlabel** head, int* errorFound, int ic, int labelCount);
+int get_data_extern(char*** icImage, extentlabel** head, int* errorFound, int ic);
+int get_data_entry(label* labelTable, extentlabel** head, int* errorFound, int labelCount);
+int print_extern(extentlabel head, FILE* extFile);

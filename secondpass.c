@@ -1,5 +1,6 @@
-
 #include "secondpass.h"
+#include "shared.h"
+#include "utils.h"
 
 /*-------------------------------------------- NON SECONDPASS FUNCTIONS FOR TESTING --------------------------------------*/
 FILE* open_file(char* filename, char* ending, char* mode){

@@ -1,5 +1,6 @@
 /*manager function. its job is to read from the input file, and report any errors that arise.*/
 #include "utils.h"
+#include "shared.h"
 
 int read_input_file(FILE** sourceFile, char* filename, char* ending, char* line, int* lineNum){
     if (*lineNum == 0)    
@@ -24,4 +25,14 @@ FILE* open_file(char* filename, char* ending, char* mode){
     FILE* file = fopen(foo, mode); // change that "a" to mode when done testing
 
     return file;
+}
+
+int add_to_counterArray(char ***counterArray, int *counter, char *toAdd){
+    (*counterArray) = (char **)realloc((*counterArray), sizeof(char *) * (*counter + 1));
+    (*counterArray)[*counter] = (char *)malloc(sizeof(char) * MAX_LABEL_LENGTH);
+
+    strcpy((*counterArray)[*counter], toAdd);
+    (*counter)++;
+
+    return TRUE;
 }

@@ -1,4 +1,5 @@
 #include "firstpass.h"
+#include "shared.h"
 #include "utils.h"
 
 /*------------------------------------------------------------- FUNCTIONS NOT IN USE RIGHT NOW, BUT NEED LATER ----------------------------------*/
@@ -75,7 +76,7 @@ int add_label(label **labelTable, char *labelName, int *labelCount, int counterV
     return 0;
 }
 
-int convert_operand(operand *operandd, char *binary, int startingPoint){
+int get_operand_addrmode(operand *operandd, char *binary, int startingPoint){
     if (operandd != NULL)
         convert_to_binary(binary + startingPoint, operandd->addrMode, 3);
     else
@@ -84,6 +85,7 @@ int convert_operand(operand *operandd, char *binary, int startingPoint){
     return 0;
 }
 
+// might remove this function
 int add_are(char *binary, char *are){
     strcat(binary, "00");
     return 0;
@@ -94,9 +96,9 @@ int add_first_op_word(char ***icImage, operation *op, int *ic){
 
     memset(binary, '\0', 13);
 
-    convert_operand(op->sourceOperand, binary, 0);
+    get_operand_addrmode(op->sourceOperand, binary, 0);
     convert_to_binary(binary + 3, op->opcode, 4);
-    convert_operand(op->destOperand, binary, 7);
+    get_operand_addrmode(op->destOperand, binary, 7);
     add_are(binary, ABSOLUTE);
 
     add_to_counterArray(icImage, ic, binary);
@@ -172,19 +174,9 @@ int analyze_data(char** token, int *params, int lineNum){
             else
                 return error_handler(Invalid_Parameter_Data, lineNum); // input isnt a number
         }
-        (*token) = strtok(NULL, DELIMITERS);
+        (*token) = strtok(NULL, PARAM_DELIMITERS);
         i++;
     }
-
-    return TRUE;
-}
-
-int add_to_counterArray(char ***counterArray, int *counter, char *toAdd){
-    (*counterArray) = (char **)realloc((*counterArray), sizeof(char *) * (*counter + 1));
-    (*counterArray)[*counter] = (char *)malloc(sizeof(char) * MAX_LABEL_LENGTH);
-
-    strcpy((*counterArray)[*counter], toAdd);
-    (*counter)++;
 
     return TRUE;
 }
@@ -249,7 +241,7 @@ int is_label(char **token, char *labelName, char *line, int lineNum){
     else{
         LAST_CHARACTER(*token) = '\0';
         strcpy(labelName, *token);
-        *token = strtok(NULL, DELIMITERS);
+        *token = strtok(NULL, PARAM_DELIMITERS);
     }
     if (*token == NULL)
         return error_handler(Blank_Label_Declaration, lineNum);
@@ -301,6 +293,40 @@ int add_operand_words(char ***icImage, label **labelTable, operation *op, int *i
     return TRUE;
 }
 
+// done
+int get_operand_value(operand *op, char *token, int lineNum){
+    char foo[1];
+
+    token = strtok(NULL, PARAM_DELIMITERS);
+    if (token == NULL)
+        op->addrMode = No_Operand;
+    // not sure if can input + aswell, check that
+    else if (strspn(token, "+-0123456789") == strlen(token)){
+        op->val.numericVal = atoi(token);
+        op->addrMode = Immediate;
+    }
+    else if (token[0] == '@' && token[1] == 'r'){
+        foo[0] = token[3];
+        if (strspn(foo, "0123456789") == 1)
+            return error_handler(Undefined_Register, lineNum);
+        foo[0] = token[2];
+        if (strspn(foo, "01234567") == 1){
+            op->val.regNum = atoi(foo);
+            op->addrMode = Register;
+        }
+        else
+            return error_handler(Undefined_Register, lineNum);
+        // return error
+    }
+    else{
+        strcpy(op->val.labelName, token);
+        op->addrMode = Direct;
+    }
+
+    return TRUE;
+}
+
+// GO OVER THIS AND REWRITE THE WHOLE MECHANISM THIS FUNCITON IS PART OF
 int get_type_val(label **labelTable, operand *operandd, int *val, int labelCount){
     if (operandd == NULL)
         return FALSE;
@@ -327,6 +353,7 @@ int get_register_word(char* binary, int sourceVal, int destVal){
     convert_to_binary(binary + 5, destVal, 5);
     binary[10] = '0'; // might not work sometime maybe? need to check this
     binary[11] = '0';
+
     return TRUE;
 }
 
@@ -360,39 +387,6 @@ int set_operands(operation *op, operand *operand1, operand *operand2){
     else{
         op->sourceOperand = NULL;
         op->destOperand = operand1;
-    }
-
-    return TRUE;
-}
-
-// done
-int get_param_value(operand *op, char *token, int lineNum){
-    char foo[1];
-
-    token = strtok(NULL, DELIMITERS);
-    if (token == NULL)
-        op->addrMode = No_Operand;
-    // not sure if can input + aswell, check that
-    else if (strspn(token, "+-0123456789") == strlen(token)){
-        op->val.numericVal = atoi(token);
-        op->addrMode = Immediate;
-    }
-    else if (token[0] == '@' && token[1] == 'r'){
-        foo[0] = token[3];
-        if (strspn(foo, "0123456789") == 1)
-            return error_handler(Undefined_Register, lineNum);
-        foo[0] = token[2];
-        if (strspn(foo, "01234567") == 1){
-            op->val.regNum = atoi(foo);
-            op->addrMode = Register;
-        }
-        else
-            return error_handler(Undefined_Register, lineNum);
-        // return error
-    }
-    else{
-        strcpy(op->val.labelName, token);
-        op->addrMode = Direct;
     }
 
     return TRUE;
@@ -450,10 +444,10 @@ int is_datastring_instruction(char* token){
     return FALSE;
 }
 
-int call_analyzer(char** lineToken, int** params, char* orgLineToken, int lineNum, int commandCode){    
+int call_datastring_analyzer(char** lineToken, int** params, char* orgLineToken, int lineNum, int commandCode){    
     *params = (int*)calloc(1, sizeof(int)); // move this to a different function
     
-    *lineToken = strtok(NULL, DELIMITERS);
+    *lineToken = strtok(NULL, PARAM_DELIMITERS);
 
     if (commandCode == _DATA){
         analyze_data(lineToken, *params, lineNum);
@@ -463,6 +457,7 @@ int call_analyzer(char** lineToken, int** params, char* orgLineToken, int lineNu
     return analyze_string(*lineToken, *params, lineNum);
 }
 
+// get the pointer to the first parameter in the line
 char* get_param_pointer(char* orgLineToken, char toFind){
     int i;
     i = 0;
@@ -515,7 +510,8 @@ int set_sequence_array_source(char sequenceArray[16][4]){
 }
 
 // try cleaning up and bit and making this functions more readable and more focused
-int first_pass_invoker(char*** dcImage, char*** icImage, FILE** amFile, label** labelTable, extentlabel** head, char* filename, int* dc, int* ic, int* labelCount){
+int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, extentlabel** head, char* filename, int* dc, int* ic, int* labelCount){
+    FILE* amFile;
     char* token;
     char line[MAX_LINE_LENGTH], originalLine[MAX_LINE_LENGTH];
     char labelName[MAX_LABEL_LENGTH];
@@ -527,14 +523,14 @@ int first_pass_invoker(char*** dcImage, char*** icImage, FILE** amFile, label** 
     set_sequence_array_source(sourceSequenceArray);
     set_sequence_array_dest(destSequenceArray);
 
-    while (read_input_file(amFile, filename, ".am", originalLine, &lineNum) == TRUE){
+    while (read_input_file(&amFile, filename, ".am", originalLine, &lineNum) == TRUE){
         strcpy(line, originalLine);
-        token = strtok(line, DELIMITERS);
+        token = strtok(line, PARAM_DELIMITERS);
 
         isLabel = is_label(&token, labelName, line, lineNum); // NOTE: if label declaration is emtpy we get segmantation fault.
 
         if ((commandCode = is_extent_instruction(token)) != FALSE){
-            token = strtok(NULL, DELIMITERS);
+            token = strtok(NULL, PARAM_DELIMITERS);
             add_extent_label(head, &token, commandCode, lineNum);
             counter = dc;
         }
@@ -542,7 +538,7 @@ int first_pass_invoker(char*** dcImage, char*** icImage, FILE** amFile, label** 
             int* params;
             int paramCnt;
             
-            paramCnt = call_analyzer(&token, &params, get_param_pointer(originalLine, LAST_CHARACTER(token)), lineNum, commandCode);
+            paramCnt = call_datastring_analyzer(&token, &params, get_param_pointer(originalLine, LAST_CHARACTER(token)), lineNum, commandCode);
             if (paramCnt != -1)
                 add_data_word(dcImage, params, dc, paramCnt, lineNum);
             counter = dc;
@@ -554,14 +550,13 @@ int first_pass_invoker(char*** dcImage, char*** icImage, FILE** amFile, label** 
 
                 op.opcode = commandCode;
 
-                if (get_param_value(&operand1, token, lineNum) != ERROR && get_param_value(&operand2, token, lineNum) != ERROR){
+                if (get_operand_value(&operand1, token, lineNum) != ERROR && get_operand_value(&operand2, token, lineNum) != ERROR){
                     set_operands(&op, &operand1, &operand2); // match operand1 and  operand2 to the correct source and dest
 
-                    if (check_param_sequence(sourceSequenceArray, op.sourceOperand, op.opcode, lineNum, _SOURCE) == TRUE && 
-                    check_param_sequence(destSequenceArray, op.destOperand, op.opcode, lineNum, _DEST) == TRUE){
+                    if (check_param_sequence(sourceSequenceArray, op.sourceOperand, op.opcode, lineNum, _SOURCE) == TRUE && check_param_sequence(destSequenceArray, op.destOperand, op.opcode, lineNum, _DEST) == TRUE){
                         add_first_op_word(icImage, &op, ic);                          // adding the first word of the operation
                         add_operand_words(icImage, labelTable, &op, ic, *labelCount); // adding the operation words
-                }
+                    }
                 }
             }
             counter = ic;
@@ -671,94 +666,6 @@ int error_handler(int errorCode, int lineNum){
     }
 
     return ERROR;
-}
-
-// labels, ic dc, errors
-int main(int argc, char **argv){
-    FILE *amFile;
-    label *labelTable;
-    extentlabel *head;
-    char filename[MAX_FILENAME_LENGTH];
-    int dc, ic, labelCount;
-    char **dcImage;
-    char **icImage;
-
-    int i;
-    for (i = 1; i < argc; i++){
-        strcpy(filename, argv[i]);
-
-        dcImage = (char **)malloc(sizeof(char *));
-        icImage = (char **)malloc(sizeof(char *));
-        labelTable = (label *)malloc(sizeof(label));
-        head = NULL;
-
-        first_pass_invoker(&dcImage, &icImage, &amFile, &labelTable, &head, filename, &dc, &ic, &labelCount);
-
-        printf("ext/ent list:\n");
-        PRINTEXTENT(head);
-        printf("instructions words:\n");
-        PRINTWORDS(icImage, ic, 0);
-        printf("data words:\n");
-        PRINTWORDS(dcImage, dc, ic);
-        printf("label table:\n");
-        PRINTLABEL(labelTable, labelCount);
-
-        // close files
-        // free memory
-    }
-}
-
-/* #region Printing Functions*/
-
-int PRINTWORDS(char **counterArray, int counter, int subCounter){
-    int i;
-    for (i = subCounter; i < counter + subCounter; i++){
-        printf("address %d:", i + 100);
-        printf(" %s\n", counterArray[i - subCounter]);
-    }
-    return 0;
-}
-
-int PRINTEXTENT(extentlabel *head){
-    while (head != NULL){
-        printf("label: %s, type: %d\n", head->labelName, head->type);
-        head = head->next;
-    }
-    return 0;
-}
-
-int PRINTLABEL(label *labelTable, int labelCount){
-    int i;
-    for (i = 0; i < labelCount; i++){
-        printf("label: %s, address: %d\n", labelTable[i].labelName, labelTable[i].address);
-    }
-    return 0;
-}
-/* #endregion */
-
-int read_input_file(FILE** sourceFile, char* filename, char* ending, char* line, int* lineNum){
-    if (*lineNum == 0)    
-        *sourceFile = open_file(filename, ending, "r"); 
-
-    if (*sourceFile == NULL)
-        return error_handler(1, *lineNum);
-
-    if (fgets(line, MAX_LINE_LENGTH, *sourceFile) != NULL){
-        (*lineNum)++;
-        return 1;
-    }
-
-    return 0;
-}
-
-FILE* open_file(char* filename, char* ending, char* mode){
-    char foo[MAX_FILENAME_LENGTH]; // add max for file extension as well
-
-    strcpy(foo, filename);
-    strcat(foo, ending);
-    FILE* file = fopen(foo, mode); // change that "a" to mode when done testing
-
-    return file;
 }
 
 /** QUESTIONS: 

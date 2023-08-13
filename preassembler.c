@@ -1,4 +1,6 @@
 #include "preassembler.h"
+#include "shared.h"
+#include "utils.h"
 
 int invoke_preassembler(char* filename){
     macro* head;

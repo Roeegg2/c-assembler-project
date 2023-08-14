@@ -31,10 +31,11 @@
 enum Opcodes {Mov = 0, Cmp, Add, Sub, Not, Clr, Lea, Inc, Dec, Jmp, Bne, Red, Prn, Jsr, Rts, Stop};
 enum AddressingModes {No_Operand = 0, Immediate = 1, Direct = 3, Register = 5};
 enum FirstpassErrors {Unknown_Command = 0, Comma_Error, Extra_Comma, Double_Comma, Missing_Comma, 
-    Invalid_Parameter_Data, Invalid_Source_Sequence, Invalid_Dest_Sequence, 
+    Parameter_Not_Whole_Number, Parameter_Out_Of_Bounds, Invalid_Source_Sequence, Invalid_Dest_Sequence, 
     Illegal_String_Declaration, Label_Already_Defined, Illegal_Comma_Name_First_Char, 
     Illegal_Comma_Name_Illegal_Chars, Illegal_Comma_Name_Saved_Word, Extent_Label_Already_Defined_Differently, 
-    Label_Name_Length_Too_Long, Undefined_Register, Blank_Label_Declaration};
+    Label_Name_Too_Long, Undefined_Register, Blank_Label_Declaration, Missing_Dest_Operand, 
+    Missing_Source_Operand, Too_Many_Operands};
 enum Warnings {Label_Points_At_ExternEntry = 0, Extent_Label_Already_Defined_Similarly};
 
 typedef struct operand{
@@ -55,6 +56,10 @@ typedef struct operation{
 
 int fp_error_handler(int errorCode, int lineNum);
 int fp_warning_handler(int warningCode, int lineNum);
+
+int operation_handler(char*** icImage, label** labelTable, char** token, char* originalLine, int* ic, int* labelCount, int commandCode, int lineNum, char sourceSequenceArray[16][4], char destSequenceArray[16][4]);
+int datastring_handler(char*** dcImage, char** token, char* originalLine, int* dc, int commandCode, int lineNum);
+int extent_handler(extentlabel** head, char** token, char* originalLine, int commandCode, int lineNum);
 
 int analyze_data(char** token, int *params, int lineNum);
 int analyze_string(char* stringLine, int* stringConverted, int lineNum);

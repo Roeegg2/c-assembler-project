@@ -15,6 +15,7 @@ int invoke_preassembler(char* filename){
     amFile = open_file(filename, ".am", "w");
 
     while (read_input_file(&asFile, filename, ".as", originalLine, &lineNum) == TRUE){
+/*         check_line_too_long(&asFile, &status, lineNum); */
         strcpy(line, originalLine);
         token = strtok(line, DELIMITERS);
 
@@ -36,14 +37,14 @@ int invoke_preassembler(char* filename){
     fclose(asFile); 
     fclose(amFile);
 
-    return TRUE;
+    return status;
 }
 
 int write_line(FILE** amFile, macro* head, char* token, char* writeLine){
     macro* temp;
 
     if ((temp = find_macro(head, token)) != NULL)
-        fprintf(*amFile, "%s", head->code);
+        fprintf(*amFile, "%s", temp->code);
     else
         fprintf(*amFile, "%s", writeLine);
     
@@ -145,6 +146,9 @@ int error_handler(int errorCode, int lineNum){
         case Macro_Name_Is_Saved_Word:
             printf("Error: Macro name is a saved word. Line %d\n", lineNum);
             break;
+        case Line_Too_Long:
+            printf("Error: Line exceeds max length. Line %d\n", lineNum);
+            break;
         default:
             printf("Error: Unknown error. Line %d\n", lineNum);
             break;
@@ -152,3 +156,13 @@ int error_handler(int errorCode, int lineNum){
 
     return ERROR;
 }
+
+/* int check_line_too_long(FILE** sourceFile, int* status, int lineNum){
+    char extraChar;
+
+    extraChar = fgetc(*sourceFile);
+    if (extraChar != EOF)
+        *status = error_handler(Line_Too_Long, lineNum);
+    
+    return TRUE;
+} */

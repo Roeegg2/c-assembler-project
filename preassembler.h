@@ -7,7 +7,7 @@
 #define MAX_MACRO_NAME_LENGTH 30 
 #define DELIMITERS " \t\n"
 
-enum MacroErrors {Macro_Already_Exists = 0, Extratanatious_Text_After_Macro_Declaration, Macro_Name_Is_Saved_Word};
+enum MacroErrors {Macro_Already_Exists = 0, Extratanatious_Text_After_Macro_Declaration, Macro_Name_Is_Saved_Word, Line_Too_Long};
 
 typedef struct macro{
     char name[MAX_MACRO_NAME_LENGTH];
@@ -23,5 +23,6 @@ int get_macro_code(FILE** asFile, macro* head, char* originalLine, char* line, i
 int write_line(FILE** amFile, macro* head, char* token, char* writeLine);
 int invoke_preassembler(char* filename);
 int error_handler(int errorCode, int lineNum);
+/* int check_line_too_long(FILE** sourceFile, int* status, int lineNum); */
 
 #endif /*PREASSEMBLER_H*/

@@ -6,31 +6,33 @@
  * 1. if command is wrong but has a lable pointing at it, should i add the label or not?
 */
 /* secondpass_invoker(&dcImage, &icImage, labelTable, &head, filename, dc, ic, labelCount); */
-char base64Table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\0";
+int sp_status;
 
 int invoke_secondpass(char*** dcImage, char*** icImage, label* labelTable, extentlabel** head, char* filename, int labelCount, int dc, int ic){
     extentlabel* temp;
-    int errorFound;
+    char base64Table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\0";
+    int sp_status;
     
-    errorFound = FALSE;
+    sp_status = TRUE;
     temp = *head;
 
-    complete_extent_data(icImage, labelTable, head, &errorFound, ic, labelCount);
-    map_labels(icImage, labelTable, &errorFound, ic, labelCount);
+    update_datalabels_addr(labelTable, labelCount, ic);
+    complete_extent_data(icImage, labelTable, head, ic, labelCount);
+    map_labels(icImage, labelTable, ic, labelCount);
 
-    if (errorFound == FALSE){
-        write_extent_file(temp, filename);
-        write_ob_file(*icImage, *dcImage, filename, ic, dc);
+    if (sp_status != ERROR){
+        write_extent_file(labelTable, temp, filename, labelCount);
+        write_ob_file(*icImage, *dcImage, filename, base64Table, ic, dc);
     }
     
     return TRUE;
 }
 
   /* swap each label with its address, plus error reporting  */
-int map_labels(char*** icImage, label* labelTable, int* errorFound, int ic, int labelCount){
+int map_labels(char*** icImage, label* labelTable, int ic, int labelCount){
       /* go over the icImage and if there is a label (aka an element in the array which its first char isnt 0 or 1) */
     label* foo;
-    int i, boost;
+    int i;
 
     for (i = 0; i < ic; i++){
         if (*(*icImage)[i] != '0' && *(*icImage)[i] != '1'){
@@ -38,17 +40,12 @@ int map_labels(char*** icImage, label* labelTable, int* errorFound, int ic, int 
 
             if (foo != NULL){
                 (*icImage)[i] = (char*)realloc((*icImage)[i], sizeof(char) * 12);
-
-                if (foo->isData == TRUE)
-                    boost = ic;
-                else
-                    boost = 0;
                     
-                convert_to_binary((*icImage)[i], foo->address + boost, 10);
+                convert_to_binary((*icImage)[i], foo->address, 10);
                 strcat((*icImage)[i], "10");   /* adding ARE */
             }
             else{
-                *errorFound = TRUE;   /* move this to error_handler() as well */
+                sp_status = ERROR;   /* move this to error_handler() as well */
                 return FALSE;   /* return error_handler() - label declared but not found */
             }
         }
@@ -57,7 +54,7 @@ int map_labels(char*** icImage, label* labelTable, int* errorFound, int ic, int 
     return TRUE;
 }
 
-int write_ob_file(char** icArray, char** dcArray, char* filename, int ic, int dc){
+int write_ob_file(char** icArray, char** dcArray, char* filename, char* base64Table, int ic, int dc){
     FILE* obFile;
     int i;
 
@@ -65,13 +62,13 @@ int write_ob_file(char** icArray, char** dcArray, char* filename, int ic, int dc
 
     fprintf(obFile, "%d\t%d\n", ic, dc);
     for (i = 0; i < ic; i++){ /* add error detection if there is a label unconvered */
-        fprintf(obFile, "%c", binary_to_base64(icArray[i], 0));
-        fprintf(obFile, "%c\n", binary_to_base64(icArray[i], 6));
+        fprintf(obFile, "%c", binary_to_base64(base64Table, icArray[i], 0));
+        fprintf(obFile, "%c\n", binary_to_base64(base64Table, icArray[i], 6));
     }
     
     for (i = 0; i < dc; i++){ /* add error detection if there is a label unconvered */
-        fprintf(obFile, "%c", binary_to_base64(dcArray[i], 0));
-        fprintf(obFile, "%c\n", binary_to_base64(dcArray[i], 6));
+        fprintf(obFile, "%c", binary_to_base64(base64Table, dcArray[i], 0));
+        fprintf(obFile, "%c\n", binary_to_base64(base64Table, dcArray[i], 6));
     }
     
     fclose(obFile);
@@ -79,7 +76,7 @@ int write_ob_file(char** icArray, char** dcArray, char* filename, int ic, int dc
     return TRUE;
 }
 
-int write_extent_file(extentlabel* head, char* filename){
+int write_extent_file(label* labelTable, extentlabel* head, char* filename, int labelCount){
     FILE* extFile; 
     FILE* entFile;
 
@@ -87,10 +84,18 @@ int write_extent_file(extentlabel* head, char* filename){
     entFile = open_file(filename, ".ent", "w");
 
     while (head != NULL){
-        if (head->type == _EXTERN)
-            print_extern(*head, extFile);
-        else
-            fprintf(entFile, "%s\t%d\n", head->labelName, head->address.addr[0]);
+        if (head->type == _EXTERN){
+            if (find_label(labelTable, head->labelName, labelCount) == NULL)
+                print_extern(*head, extFile);
+            else
+                sp_error_handler(Extern_Declared, head->line); /* label marked as extern but is also declared in code */
+        }
+        else{
+            if (find_label(labelTable, head->labelName, labelCount) != NULL)
+                fprintf(entFile, "%s\t%d\n", head->labelName, head->address.addr[0]);
+            else
+                sp_error_handler(Entry_Not_Declared, head->line); /* label marked as .entry but isnt declared in code*/
+        }
 
         head = head->next;
     }
@@ -107,12 +112,12 @@ int print_extern(extentlabel head, FILE* extFile){
     return 0;
 }
 
-int complete_extent_data(char*** icImage, label* labelTable, extentlabel** head, int* errorFound, int ic, int labelCount){
+int complete_extent_data(char*** icImage, label* labelTable, extentlabel** head, int ic, int labelCount){
     while ((*head) != NULL){
         if ((*head)->type == _ENTRY)
-            get_data_entry(labelTable, head, errorFound, labelCount, ic);
+            get_data_entry(labelTable, head, labelCount, ic);
         else
-            get_data_extern(icImage, head, errorFound, ic);
+            get_data_extern(icImage, head, ic);
 
         (*head) = (*head)->next;
     }   
@@ -120,10 +125,9 @@ int complete_extent_data(char*** icImage, label* labelTable, extentlabel** head,
     return TRUE;
 }
 
-int get_data_entry(label* labelTable, extentlabel** head, int* errorFound, int labelCount, int ic){
+int get_data_entry(label* labelTable, extentlabel** head, int labelCount, int ic){
     int i, boost;
 
-    boost = 0;
     for (i = 0; i < labelCount; i++){
         if (strcmp(labelTable[i].labelName, (*head)->labelName) == 0){
             (*head)->address.addr = (int*)malloc(sizeof(int));
@@ -132,11 +136,12 @@ int get_data_entry(label* labelTable, extentlabel** head, int* errorFound, int l
         }
     }
 
-    *errorFound = TRUE;   /* move this to error_handler() as well */
-    return FALSE;   /* return error_handler() - no such label found  */
+    return TRUE;
+    // *sp_status = TRUE;   /* move this to error_handler() as well */
+    // return FALSE;   /* return error_handler() - no such label found  */
 }
 
-int get_data_extern(char*** icImage, extentlabel** head, int* errorFound, int ic){
+int get_data_extern(char*** icImage, extentlabel** head, int ic){
     int i;
     
     for (i = 0; i < ic; i++){
@@ -149,12 +154,13 @@ int get_data_extern(char*** icImage, extentlabel** head, int* errorFound, int ic
         }
     }
 
-      /* *errorFound = TRUE;   move this to error_handler() as well */
-    return FALSE;   /* return error_handler() - return warning - label declared as extern but is not used in code  */
+    return TRUE;
+      /* *sp_status = TRUE;   move this to error_handler() as well */
+      /* return error_handler() - return warning - label declared as extern but is not used in code  */
 }
 
 
-char binary_to_base64(char* binary, int start){
+char binary_to_base64(char* base64Table, char* binary, int start){
     int decimalValue, i;
 
     decimalValue = 0;
@@ -162,4 +168,29 @@ char binary_to_base64(char* binary, int start){
         decimalValue = (decimalValue << 1) + (binary[i] - '0');
 
     return base64Table[decimalValue];
+}
+
+// DONT LIKE THIS FUNCTION, CHANGE THE WHOLE MECHANISM
+int update_datalabels_addr(label* labelTable, int labelCount, int ic){
+    int i;
+
+    for (i = 0; i < labelCount; i++)
+        if (labelTable[i].isData == TRUE)
+            labelTable[i].address += ic;
+
+    return TRUE;
+}
+
+int sp_error_handler(int errorCode, int lineNum){
+    switch (errorCode){
+        case Extern_Declared:
+            printf("Error: label marked as extern but is also declared in code. Line %d\n", lineNum);
+            break;
+        case Entry_Not_Declared:
+            printf("Error: label marked as .entry but is not declared in code. Line %d\n", lineNum);
+            break;
+    }
+
+    sp_status = ERROR;
+    return sp_status;
 }

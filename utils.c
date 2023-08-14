@@ -3,18 +3,16 @@
 #include "shared.h"
 
 int read_input_file(FILE** sourceFile, char* filename, char* ending, char* line, int* lineNum){
-    if (*lineNum == 0)    
+    if (*lineNum == 0){
         *sourceFile = open_file(filename, ending, "r"); 
-
-    if (*sourceFile == NULL)
-        return -1; /* error_handler(1, *lineNum); */
-
-    if (fgets(line, MAX_LINE_LENGTH, *sourceFile) != NULL){
-        (*lineNum)++;
-        return 1;
+        CHECK_ALLOCATION_ERROR(sourceFile);
     }
 
-    return 0;
+    if (fgets(line, MAX_LINE_LENGTH, *sourceFile) == NULL)
+        return FALSE;
+    
+    (*lineNum)++;
+    return TRUE;
 }
 
 FILE* open_file(char* filename, char* ending, char* mode){

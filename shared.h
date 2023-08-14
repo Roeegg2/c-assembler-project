@@ -1,11 +1,12 @@
 #ifndef _SHARED_H
 #define _SHARED_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 /* change these later */
-#define MAX_LINE_LENGTH 100 
+#define MAX_LINE_LENGTH 82 
 #define MAX_LABEL_LENGTH 31
 #define MAX_FILENAME_LENGTH 20
 
@@ -34,6 +35,7 @@ typedef struct extentlabel{
         int count;
     } address;
     int type;
+    int line;
     struct extentlabel* next;
 } extentlabel;
 

@@ -69,6 +69,7 @@ int add_label(label **labelTable, char *labelName, int *labelCount, int counterV
     (*labelTable)[*labelCount].address = counterValue + 100; /*change that to a pointer outside of the function*/
     (*labelTable)[*labelCount].isData = isData;
     (*labelCount)++;
+
     return 0;
 }
 
@@ -157,9 +158,11 @@ int analyze_data(char** token, int *params, int lineNum){
         if (**token != ','){
             if (strspn((*token), "-+0123456789") == strlen((*token))){
                 params[i] = atoi((*token));
+                if (params[i] < -2048 || params[i] > 2047)
+                    return fp_error_handler(Parameter_Out_Of_Bounds, lineNum);
             }
             else
-                return fp_error_handler(Invalid_Parameter_Data, lineNum); /* input isnt a number */
+                return fp_error_handler(Parameter_Not_Whole_Number, lineNum); /* input isnt a number */
         }
         (*token) = strtok(NULL, PARAM_DELIMITERS);
         i++;
@@ -216,6 +219,7 @@ int add_extent_label(extentlabel** head, char** token, int type, int lineNum){
 
     strcpy(newNode->labelName, *token);
     newNode->type = type;
+    newNode->line = lineNum;
     newNode->next = NULL;
 
     return TRUE;
@@ -223,7 +227,7 @@ int add_extent_label(extentlabel** head, char** token, int type, int lineNum){
 
 int is_label(char **token, char *labelName, char *line, int lineNum){
     if (strlen(*token)-1 > MAX_LABEL_LENGTH)
-        return fp_error_handler(Label_Name_Length_Too_Long, lineNum);
+        return fp_error_handler(Label_Name_Too_Long, lineNum);
     
     if (LAST_CHARACTER(*token) != ':')
         return FALSE;
@@ -261,21 +265,21 @@ label* find_label(label *labelTable, char *labelName, int labelCount){
 /* adds the operand words to the operation array */
 int add_operand_words(char ***icImage, label **labelTable, operation *op, int *ic, int labelCount){
     int sourceVal, destVal;
-    int sourceStatus, destStatus;
+    int sourcefp_status, destfp_status;
     char binary[31];
 
-    sourceStatus = get_type_val(labelTable, op->sourceOperand, &sourceVal, labelCount);
-    destStatus = get_type_val(labelTable, op->destOperand, &destVal, labelCount);
+    sourcefp_status = get_type_val(labelTable, op->sourceOperand, &sourceVal, labelCount);
+    destfp_status = get_type_val(labelTable, op->destOperand, &destVal, labelCount);
 
     if (BOTH_ARE_REGISTER(op)){
         get_register_word(binary, sourceVal, destVal);
         add_to_counterArray(icImage, ic, binary);
     }
     else{
-        if (get_isolated_word(op->sourceOperand, binary, sourceVal, sourceStatus) == TRUE)
+        if (get_isolated_word(op->sourceOperand, binary, sourceVal, sourcefp_status) == TRUE)
             add_to_counterArray(icImage, ic, binary);
 
-        if (get_isolated_word(op->destOperand, binary, destVal, destStatus) == TRUE)
+        if (get_isolated_word(op->destOperand, binary, destVal, destfp_status) == TRUE)
             add_to_counterArray(icImage, ic, binary);
     }
 
@@ -294,6 +298,8 @@ int get_operand_value(operand *op, char *token, int lineNum){
     else if (strspn(token, "+-0123456789") == strlen(token)){
         op->val.numericVal = atoi(token);
         op->addrMode = Immediate;
+        if (op->val.numericVal > 511 || op->val.numericVal < -512)
+            return fp_error_handler(Parameter_Out_Of_Bounds, lineNum);
     }
     else if (token[0] == '@' && token[1] == 'r'){
         foo[0] = token[3];
@@ -350,8 +356,8 @@ int get_register_word(char* binary, int sourceVal, int destVal){
     return TRUE;
 }
 
-int get_isolated_word(operand *operandd, char* binary, int val, int status){
-    if (status == FALSE || operandd->addrMode == No_Operand)
+int get_isolated_word(operand *operandd, char* binary, int val, int fp_status){
+    if (fp_status == FALSE || operandd->addrMode == No_Operand)
         return FALSE;
 
     memset(binary, '\0', 13);
@@ -382,30 +388,30 @@ int set_operands(operation *op, operand *operand1, operand *operand2){
 }
 
 int get_comma_param_cnt(char* line, int lineNum){
-    int i, status1, status2, paramCnt, commaCnt;
+    int i, fp_status1, fp_status2, paramCnt, commaCnt;
 
-    i = paramCnt = commaCnt = status1 = status2 = FALSE;
+    i = paramCnt = commaCnt = fp_status1 = fp_status2 = FALSE;
     if (line == NULL)
         return TRUE;
 
     while (line[i] != '\0'){
         if (line[i] == ','){
-            status2 = status1;
-            status1 = _COMMA;
+            fp_status2 = fp_status1;
+            fp_status1 = _COMMA;
             commaCnt++; 
         }
         else if (line[i] != ' ' && line[i] != '\t'){
-            status2 = status1;
-            status1 = _CHAR;
+            fp_status2 = fp_status1;
+            fp_status1 = _CHAR;
             paramCnt++; 
             while (line[i] != ' ' && line[i] != '\t' && line[i] != '\0' && line[i] != ',')
                 i++;
             i--;
         }
-        if (status1 == status2 && status1 != FALSE){
-            if (status1 == _COMMA)
+        if (fp_status1 == fp_status2 && fp_status1 != FALSE){
+            if (fp_status1 == _COMMA)
                 return fp_error_handler(Double_Comma, lineNum);   /* two commas in a row */
-            else if (status1 == _CHAR)
+            else if (fp_status1 == _CHAR)
                 return fp_error_handler(Missing_Comma, lineNum);   /* two parameters in a row */
         }
         i++;
@@ -414,6 +420,7 @@ int get_comma_param_cnt(char* line, int lineNum){
     }
     if (paramCnt == commaCnt)
         return fp_error_handler(Extra_Comma, lineNum);   /* extra comma at the end or at the start */
+
     return paramCnt;
 }
 
@@ -455,7 +462,7 @@ char* get_param_pointer(char* orgLineToken, char toFind){
     i = 0;
 
     while (orgLineToken[i+1] != '\n' && orgLineToken[i+1] != '\0'){
-        if (orgLineToken[i] == toFind && (orgLineToken[i+1] == ' ' || orgLineToken[i+1] == '\t'))
+        if (orgLineToken[i] == toFind && (orgLineToken[i+1] == ' ' || orgLineToken[i+1] == '\t' || orgLineToken[i+1] == ','))
             return orgLineToken + i+1;
         i++; 
     }
@@ -504,7 +511,62 @@ int set_sequence_array_source(char sequenceArray[16][4]){
 
     return TRUE;
 }
- 
+
+int extent_handler(extentlabel** head, char** token, char* originalLine, int commandCode, int lineNum){
+    char* paramsPtr;
+
+    *token = strtok(NULL, PARAM_DELIMITERS);
+    paramsPtr = get_param_pointer(originalLine, LAST_CHARACTER(*token));
+
+    if (get_comma_param_cnt(paramsPtr, lineNum) != ERROR){
+        while (*token != NULL){
+            add_extent_label(head, token, commandCode, lineNum);
+            *token = strtok(NULL, PARAM_DELIMITERS);
+        }
+    }
+
+    return TRUE;
+}
+
+int datastring_handler(char*** dcImage, char** token, char* originalLine, int* dc, int commandCode, int lineNum){
+    char* paramsPtr;
+    int* params;
+    int paramCnt;
+
+    paramsPtr = get_param_pointer(originalLine, LAST_CHARACTER(*token));
+    paramCnt = call_datastring_analyzer(token, &params, paramsPtr, lineNum, commandCode);
+
+    if (paramCnt != -1)
+        add_data_word(dcImage, params, dc, paramCnt, lineNum);
+}
+
+int operation_handler(char*** icImage, label** labelTable, char** token, char* originalLine, int* ic, int* labelCount, int commandCode, int lineNum, char sourceSequenceArray[16][4], char destSequenceArray[16][4]){
+    int paramCnt;
+    char* paramPtr;
+    operation op;
+    operand operand1, operand2;
+
+    paramPtr = get_param_pointer(originalLine, LAST_CHARACTER(*token));
+    paramCnt = get_comma_param_cnt(paramPtr, lineNum);
+
+    if (paramCnt >= 3)
+        return fp_error_handler(Too_Many_Operands, lineNum);
+
+    else if (paramCnt != ERROR){
+        op.opcode = commandCode;
+
+        if (get_operand_value(&operand1, *token, lineNum) != ERROR && get_operand_value(&operand2, *token, lineNum) != ERROR){
+            set_operands(&op, &operand1, &operand2);   /* match operand1 and  operand2 to the correct source and dest */
+
+            if (check_param_sequence(sourceSequenceArray, op.sourceOperand, op.opcode, lineNum, _SOURCE) == TRUE && check_param_sequence(destSequenceArray, op.destOperand, op.opcode, lineNum, _DEST) == TRUE){
+                add_first_op_word(icImage, &op, ic);                            /* adding the first word of the operation */
+                add_operand_words(icImage, labelTable, &op, ic, *labelCount);   /* adding the operation words */
+            }
+        }
+    }    
+}
+
+int fp_status;
   /* try cleaning up and bit and making this functions more readable and more focused */
 int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, extentlabel** head, char* filename, int* dc, int* ic, int* labelCount){
     FILE* amFile;
@@ -514,6 +576,7 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
     char sourceSequenceArray[16][4], destSequenceArray[16][4];
     int commandCode, lineNum, isLabel, counterVal, isData;
 
+    fp_status = TRUE; // stopped here. not sure i should use global variable
     *dc = *ic = *labelCount = lineNum = 0;
     /* move this to assembler program, maybe make this global variable */
     set_sequence_array_source(sourceSequenceArray);
@@ -524,44 +587,20 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
         token = strtok(line, PARAM_DELIMITERS);
 
         isLabel = is_label(&token, labelName, line, lineNum);   /* NOTE: if label declaration is emtpy we get segmantation fault. */
+                    
+        counterVal = *dc;
+        isData = TRUE;
+        if ((commandCode = is_extent_instruction(token)) != FALSE)
+            extent_handler(head, &token, originalLine, commandCode, lineNum);
 
-        if ((commandCode = is_extent_instruction(token)) != FALSE){
-            counterVal = *dc;
-            isData = TRUE;
+        else if ((commandCode = is_datastring_instruction(token)) != FALSE)
+            datastring_handler(dcImage, &token, originalLine, dc, commandCode, lineNum);
 
-            token = strtok(NULL, PARAM_DELIMITERS);
-            add_extent_label(head, &token, commandCode, lineNum);
-        }
-        else if ((commandCode = is_datastring_instruction(token)) != FALSE){
-            int* params;
-            int paramCnt;
-
-            counterVal = *dc;
-            isData = TRUE;
-
-            paramCnt = call_datastring_analyzer(&token, &params, get_param_pointer(originalLine, LAST_CHARACTER(token)), lineNum, commandCode);
-            if (paramCnt != -1)
-                add_data_word(dcImage, params, dc, paramCnt, lineNum);
-        }
         else if ((commandCode = is_operation(token)) != -1){
             counterVal = *ic;
             isData = FALSE;
 
-            if (get_comma_param_cnt(get_param_pointer(originalLine, LAST_CHARACTER(token)), lineNum) != -1){
-                operation op;
-                operand operand1, operand2;
-
-                op.opcode = commandCode;
-
-                if (get_operand_value(&operand1, token, lineNum) != ERROR && get_operand_value(&operand2, token, lineNum) != ERROR){
-                    set_operands(&op, &operand1, &operand2);   /* match operand1 and  operand2 to the correct source and dest */
-
-                    if (check_param_sequence(sourceSequenceArray, op.sourceOperand, op.opcode, lineNum, _SOURCE) == TRUE && check_param_sequence(destSequenceArray, op.destOperand, op.opcode, lineNum, _DEST) == TRUE){
-                        add_first_op_word(icImage, &op, ic);                            /* adding the first word of the operation */
-                        add_operand_words(icImage, labelTable, &op, ic, *labelCount);   /* adding the operation words */
-                    }
-                }
-            }
+            operation_handler(icImage, labelTable, &token, originalLine, ic, labelCount, commandCode, lineNum, sourceSequenceArray, destSequenceArray);
         }
         else
             fp_error_handler(Unknown_Command, lineNum);
@@ -577,7 +616,7 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
 
       /* close files */
       /* free memory */
-    return TRUE;
+    return fp_status;
 }
 
 int check_param_sequence(char sequenceArr[16][4], operand* operandd, int opcode, int lineNum, int sourceOrDest){
@@ -591,10 +630,16 @@ int check_param_sequence(char sequenceArr[16][4], operand* operandd, int opcode,
         j++;
     
     if (sequenceArr[opcode][j] == '\0'){
-        if (sourceOrDest == _SOURCE)
+        if (sourceOrDest == _SOURCE){
+            if (addrMode == '0')
+                return fp_error_handler(Missing_Source_Operand, lineNum);
             return fp_error_handler(Invalid_Source_Sequence, lineNum);
-        else
+        }
+        else{
+            if (addrMode == '0')
+                return fp_error_handler(Missing_Dest_Operand, lineNum);
             return fp_error_handler(Invalid_Dest_Sequence, lineNum);
+        }
     }
     return TRUE;
 }
@@ -629,17 +674,29 @@ int fp_error_handler(int errorCode, int lineNum){
     case Missing_Comma:
         printf("Error: Missing comma. Line %d\n", lineNum);
         break;
-    case Invalid_Parameter_Data:
-        printf("Error: Non whole numerical value found in '.data'. Line %d\n", lineNum);
+    case Parameter_Not_Whole_Number:
+        printf("Error: Non whole numerical value found. Line %d\n", lineNum);
+        break;
+    case Parameter_Out_Of_Bounds:
+        printf("Error: Parameter out of bounds. Line %d\n", lineNum);
         break;
     case Invalid_Source_Sequence:
-        printf("Error: Invalid source operand sequence. Line %d\n", lineNum);
+        printf("Error: Invalid source operand. Line %d\n", lineNum);
         break;
     case Invalid_Dest_Sequence:
-        printf("Error: Invalid destination operand sequence. Line %d\n", lineNum);
+        printf("Error: Invalid destination operand. Line %d\n", lineNum);
+        break;
+    case Missing_Dest_Operand:
+        printf("Error: Missing destination operand. Line %d\n", lineNum);
+        break;
+    case Missing_Source_Operand:
+        printf("Error: Missing source operand. Line %d\n", lineNum);
+        break;
+    case Too_Many_Operands:
+        printf("Error: Too many operands passed to operation. Line %d\n", lineNum);
         break;
     case Illegal_String_Declaration:
-        printf("Error: Illegal string declaration (probably \"\"). Line %d\n", lineNum);
+        printf("Error: Illegal string declaration (are you missing \"\"?). Line %d\n", lineNum);
         break;
     case Label_Already_Defined:
         printf("Error: Label already defined beforehand. Line %d\n", lineNum);
@@ -656,7 +713,7 @@ int fp_error_handler(int errorCode, int lineNum){
     case Extent_Label_Already_Defined_Differently:
         printf("Error: Extent label already defined a different type. Line %d\n", lineNum);
         break;
-    case Label_Name_Length_Too_Long:
+    case Label_Name_Too_Long:
         printf("Error: Label name exceeds max length. Line %d\n", lineNum);
         break;
     case Undefined_Register:
@@ -667,6 +724,7 @@ int fp_error_handler(int errorCode, int lineNum){
         break;
     }
 
+    fp_status = ERROR;
     return ERROR;
 }
 

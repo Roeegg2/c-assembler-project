@@ -31,7 +31,7 @@ int PRINTLABEL(label *labelTable, int labelCount){
 int main(int argc, char **argv){
     label *labelTable;
     extentlabel *head;
-    int dc, ic, labelCount;
+    int dc, ic, labelCount, status;
     char **dcImage;
     char **icImage;
     int i;
@@ -42,25 +42,26 @@ int main(int argc, char **argv){
         labelTable = (label *)malloc(sizeof(label));
         head = NULL;
 
-        invoke_preassembler(argv[i]);
-        invoke_firstpass(&dcImage, &icImage, &labelTable, &head, argv[i], &dc, &ic, &labelCount);
-        invoke_secondpass(&dcImage, &icImage, labelTable, &head, argv[i], labelCount, dc, ic);
-
-        printf("ext/ent list:\n");
+        status = invoke_preassembler(argv[i]);
+        if (status != ERROR)
+            status = invoke_firstpass(&dcImage, &icImage, &labelTable, &head, argv[i], &dc, &ic, &labelCount);
+        if (status != ERROR)
+            invoke_secondpass(&dcImage, &icImage, labelTable, &head, argv[i], labelCount, dc, ic);
+        
+        /* printf("ext/ent list:\n");
         PRINTEXTENT(head);
         printf("instructions words:\n");
         PRINTWORDS(icImage, ic, 0);
         printf("data words:\n");
         PRINTWORDS(dcImage, dc, ic);
         printf("label table:\n");
-        PRINTLABEL(labelTable, labelCount);
+        PRINTLABEL(labelTable, labelCount); */
 
         /* close files */
         /* free memory */
     }
 
     return 0;
-    getchar();
 }
 
 /** TODO:

@@ -58,26 +58,17 @@ int add_one(char binary[]){
     return TRUE;
 }
 
-int add_label(label **labelTable, char *labelName, int *labelCount, int counterValue, int lineNum){
+int add_label(label **labelTable, char *labelName, int *labelCount, int counterValue, int isData, int lineNum){
     (*labelTable) = (label *)realloc((*labelTable), sizeof(label) * ((*labelCount) + 1));
 
-    if (find_label(*labelTable, labelName, *labelCount) != FALSE)
+    if (find_label(*labelTable, labelName, *labelCount) != NULL)
         return fp_error_handler(Label_Already_Defined, lineNum);
 
     strcpy((*labelTable)[*labelCount].labelName, labelName);
     (*labelTable)[*labelCount].line = lineNum;
     (*labelTable)[*labelCount].address = counterValue + 100; /*change that to a pointer outside of the function*/
-    (*labelTable)[*labelCount].type = 0;
+    (*labelTable)[*labelCount].isData = isData;
     (*labelCount)++;
-    return 0;
-}
-
-int get_operand_addrmode(operand *operandd, char *binary, int startingPoint){
-    if (operandd != NULL)
-        convert_to_binary(binary + startingPoint, operandd->addrMode, 3);
-    else
-        strcat(binary, "000");
-
     return 0;
 }
 
@@ -92,9 +83,9 @@ int add_first_op_word(char ***icImage, operation *op, int *ic){
 
     memset(binary, '\0', 13);
 
-    get_operand_addrmode(op->sourceOperand, binary, 0);
+    convert_to_binary(binary + 0, op->sourceOperand->addrMode, 3);
     convert_to_binary(binary + 3, op->opcode, 4);
-    get_operand_addrmode(op->destOperand, binary, 7);
+    convert_to_binary(binary + 7, op->destOperand->addrMode, 3);
     add_are(binary, ABSOLUTE);
 
     add_to_counterArray(icImage, ic, binary);
@@ -257,14 +248,14 @@ int is_label(char **token, char *labelName, char *line, int lineNum){
     return TRUE;
 }
 
-int find_label(label *labelTable, char *labelName, int labelCount){
+label* find_label(label *labelTable, char *labelName, int labelCount){
     int i;
 
     for (i = 0; i < labelCount; i++)
         if (strcmp(labelTable[i].labelName, labelName) == 0)
-            return labelTable[i].address; /* need to return the address plus 100 */
+            return labelTable+i; /* need to return the address plus 100 */
 
-    return FALSE;
+    return NULL;
 }
 
 /* adds the operand words to the operation array */
@@ -276,7 +267,7 @@ int add_operand_words(char ***icImage, label **labelTable, operation *op, int *i
     sourceStatus = get_type_val(labelTable, op->sourceOperand, &sourceVal, labelCount);
     destStatus = get_type_val(labelTable, op->destOperand, &destVal, labelCount);
 
-    if (BOTH_ARE_NOT_NULL(sourceStatus, destStatus) && BOTH_ARE_REGISTER(op)){
+    if (BOTH_ARE_REGISTER(op)){
         get_register_word(binary, sourceVal, destVal);
         add_to_counterArray(icImage, ic, binary);
     }
@@ -295,8 +286,10 @@ int get_operand_value(operand *op, char *token, int lineNum){
     char foo[1];
 
     token = strtok(NULL, PARAM_DELIMITERS);
-    if (token == NULL)
+    if (token == NULL){
+        op->val.numericVal = atoi(token);
         op->addrMode = No_Operand;
+    }
     /* not sure if can input + aswell, check that */
     else if (strspn(token, "+-0123456789") == strlen(token)){
         op->val.numericVal = atoi(token);
@@ -325,12 +318,15 @@ int get_operand_value(operand *op, char *token, int lineNum){
 
 /* GO OVER THIS AND REWRITE THE WHOLE MECHANISM THIS FUNCITON IS PART OF */
 int get_type_val(label **labelTable, operand *operandd, int *val, int labelCount){
-    if (operandd == NULL)
-        return FALSE;
+    label* temp;
 
     switch (operandd->addrMode){
     case Direct:
-        *val = find_label(*labelTable, operandd->val.labelName, labelCount);
+        temp = find_label(*labelTable, operandd->val.labelName, labelCount);
+        if (temp == NULL)
+            *val = 0;
+        else
+            *val = temp->address;
         break;
     case Immediate:
         *val = operandd->val.numericVal;
@@ -355,7 +351,7 @@ int get_register_word(char* binary, int sourceVal, int destVal){
 }
 
 int get_isolated_word(operand *operandd, char* binary, int val, int status){
-    if (status == FALSE)
+    if (status == FALSE || operandd->addrMode == No_Operand)
         return FALSE;
 
     memset(binary, '\0', 13);
@@ -373,16 +369,12 @@ int get_isolated_word(operand *operandd, char* binary, int val, int status){
 }
 
 int set_operands(operation *op, operand *operand1, operand *operand2){
-    if (operand1->addrMode == 0 && operand2->addrMode == 0){
-        op->sourceOperand = NULL;
-        op->destOperand = NULL;
-    }
-    else if (operand1->addrMode != 0 && operand2->addrMode != 0){
+    if ((operand1->addrMode == 0 && operand2->addrMode == 0) || (operand1->addrMode != 0 && operand2->addrMode != 0)){
         op->sourceOperand = operand1;
         op->destOperand = operand2;
     }
     else{
-        op->sourceOperand = NULL;
+        op->sourceOperand = operand2;
         op->destOperand = operand1;
     }
 
@@ -393,6 +385,8 @@ int get_comma_param_cnt(char* line, int lineNum){
     int i, status1, status2, paramCnt, commaCnt;
 
     i = paramCnt = commaCnt = status1 = status2 = FALSE;
+    if (line == NULL)
+        return TRUE;
 
     while (line[i] != '\0'){
         if (line[i] == ','){
@@ -436,7 +430,7 @@ int is_datastring_instruction(char* token){
     if (strcmp(token, ".data") == 0)
         return _DATA;
     if (strcmp(token, ".string") == 0)
-        return _ENTRY;
+        return _STRING;
 
     return FALSE;
 }
@@ -455,11 +449,12 @@ int call_datastring_analyzer(char** lineToken, int** params, char* orgLineToken,
 }
 
   /* get the pointer to the first parameter in the line */
+  /* fix this function */
 char* get_param_pointer(char* orgLineToken, char toFind){
     int i;
     i = 0;
 
-    while (orgLineToken[i+1] != '\n'){
+    while (orgLineToken[i+1] != '\n' && orgLineToken[i+1] != '\0'){
         if (orgLineToken[i] == toFind && (orgLineToken[i+1] == ' ' || orgLineToken[i+1] == '\t'))
             return orgLineToken + i+1;
         i++; 
@@ -517,10 +512,10 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
     char line[MAX_LINE_LENGTH], originalLine[MAX_LINE_LENGTH];
     char labelName[MAX_LABEL_LENGTH];
     char sourceSequenceArray[16][4], destSequenceArray[16][4];
-    int* counter;
-    int commandCode, lineNum, isLabel;
+    int commandCode, lineNum, isLabel, counterVal, isData;
 
     *dc = *ic = *labelCount = lineNum = 0;
+    /* move this to assembler program, maybe make this global variable */
     set_sequence_array_source(sourceSequenceArray);
     set_sequence_array_dest(destSequenceArray);
 
@@ -531,20 +526,27 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
         isLabel = is_label(&token, labelName, line, lineNum);   /* NOTE: if label declaration is emtpy we get segmantation fault. */
 
         if ((commandCode = is_extent_instruction(token)) != FALSE){
+            counterVal = *dc;
+            isData = TRUE;
+
             token = strtok(NULL, PARAM_DELIMITERS);
             add_extent_label(head, &token, commandCode, lineNum);
-            counter = dc;
         }
         else if ((commandCode = is_datastring_instruction(token)) != FALSE){
             int* params;
             int paramCnt;
-            
+
+            counterVal = *dc;
+            isData = TRUE;
+
             paramCnt = call_datastring_analyzer(&token, &params, get_param_pointer(originalLine, LAST_CHARACTER(token)), lineNum, commandCode);
             if (paramCnt != -1)
                 add_data_word(dcImage, params, dc, paramCnt, lineNum);
-            counter = dc;
         }
         else if ((commandCode = is_operation(token)) != -1){
+            counterVal = *ic;
+            isData = FALSE;
+
             if (get_comma_param_cnt(get_param_pointer(originalLine, LAST_CHARACTER(token)), lineNum) != -1){
                 operation op;
                 operand operand1, operand2;
@@ -560,7 +562,6 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
                     }
                 }
             }
-            counter = ic;
         }
         else
             fp_error_handler(Unknown_Command, lineNum);
@@ -569,7 +570,7 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
             if (commandCode == _ENTRY || commandCode == _EXTERN)
                 fp_warning_handler(Label_Points_At_ExternEntry, lineNum);
             else
-                add_label(labelTable, labelName, labelCount, *counter, lineNum);   /* not sure if its right to pass into the function needtochangename */
+                add_label(labelTable, labelName, labelCount, counterVal, isData, lineNum); // remove ic and dc, make them global variables
               /* NOTE: if label there is not command, and then counter isnt pointing anywhere valid, what do we do? */
         }
     }
@@ -586,7 +587,7 @@ int check_param_sequence(char sequenceArr[16][4], operand* operandd, int opcode,
     addrMode = operandd->addrMode + '0';
     j = 0;
 
-    while (sequenceArr[opcode][j] != '\0' && (*sequenceArr)[j] != addrMode)
+    while (sequenceArr[opcode][j] != '\0' && sequenceArr[opcode][j] != addrMode)
         j++;
     
     if (sequenceArr[opcode][j] == '\0'){

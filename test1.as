@@ -1,3 +1,4 @@
+; file ps.as
 .entry LENGTH
 .extern W
 MAIN: mov @r3 ,LENGTH

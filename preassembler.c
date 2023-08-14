@@ -10,6 +10,7 @@ int invoke_preassembler(char* filename){
     char* token;
     int lineNum, status;
 
+    head = NULL;
     lineNum = status = 0;
     amFile = open_file(filename, ".am", "w");
 

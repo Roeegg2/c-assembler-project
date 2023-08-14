@@ -23,8 +23,8 @@
 typedef struct label{
     char labelName[MAX_LABEL_LENGTH];
     int line;
-    int type;
-    int address; 
+    int address;
+    int isData; 
 } label;
 
 typedef struct extentlabel{
@@ -37,7 +37,7 @@ typedef struct extentlabel{
     struct extentlabel* next;
 } extentlabel;
 
-int find_label(label* labelTable, char* labelName, int labelCount);
+label* find_label(label* labelTable, char* labelName, int labelCount);
 int convert_to_binary(char binary[], int number, int size);
 
 #endif

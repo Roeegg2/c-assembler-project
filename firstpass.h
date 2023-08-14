@@ -37,15 +37,13 @@ enum FirstpassErrors {Unknown_Command = 0, Comma_Error, Extra_Comma, Double_Comm
     Label_Name_Length_Too_Long, Undefined_Register, Blank_Label_Declaration};
 enum Warnings {Label_Points_At_ExternEntry = 0, Extent_Label_Already_Defined_Similarly};
 
-typedef union operandValue{
-    char labelName[MAX_LABEL_LENGTH];
-    int regNum;
-    int numericVal;
-} operandValue;
-
 typedef struct operand{
     int addrMode;
-    operandValue val;
+    union {
+        char labelName[MAX_LABEL_LENGTH];
+        int regNum;
+        int numericVal;
+    } val; 
 } operand;
 
 typedef struct operation{
@@ -70,7 +68,6 @@ int get_register_word(char* binary, int sourceVal, int destVal);
 int add_operand_words(char ***icImage, label **labelTable, operation *op, int *ic, int labelCount);
 int add_first_op_word(char ***icImage, operation *op, int *ic);
 int add_are(char *binary, char *are); /* might remove this function  */
-int get_operand_addrmode(operand *operandd, char *binary, int startingPoint);
 
 int add_data_word(char*** dcImage, int* params, int* dc, int paramCnt, int lineNum);
 
@@ -86,7 +83,7 @@ int is_extent_instruction(char* token);
 int call_datastring_analyzer(char** lineToken, int** params, char* orgLineToken, int lineNum, int commandCode);
 
 int is_label(char** token, char* labelName, char* line, int lineNum);
-int add_label(label **labelTable, char *labelName, int *labelCount, int counterValue, int lineNum);
+int add_label(label **labelTable, char *labelName, int *labelCount, int counterValue, int isData, int lineNum);
 
 int add_extent_label(extentlabel** head, char** token, int type, int lineNum);
 int get_extent_label_type(extentlabel* head, char* labelName);

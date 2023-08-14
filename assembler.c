@@ -31,22 +31,20 @@ int PRINTLABEL(label *labelTable, int labelCount){
 int main(int argc, char **argv){
     label *labelTable;
     extentlabel *head;
-    char filename[MAX_FILENAME_LENGTH];
     int dc, ic, labelCount;
     char **dcImage;
     char **icImage;
-
     int i;
+    
     for (i = 1; i < argc; i++){
-        strcpy(filename, argv[i]);
-
         dcImage = (char **)malloc(sizeof(char *));
         icImage = (char **)malloc(sizeof(char *));
         labelTable = (label *)malloc(sizeof(label));
         head = NULL;
 
-        invoke_preassembler(filename);
-        invoke_firstpass(&dcImage, &icImage, &labelTable, &head, filename, &dc, &ic, &labelCount);
+        invoke_preassembler(argv[i]);
+        invoke_firstpass(&dcImage, &icImage, &labelTable, &head, argv[i], &dc, &ic, &labelCount);
+        invoke_secondpass(&dcImage, &icImage, labelTable, &head, argv[i], labelCount, dc, ic);
 
         printf("ext/ent list:\n");
         PRINTEXTENT(head);
@@ -62,4 +60,12 @@ int main(int argc, char **argv){
     }
 
     return 0;
+    getchar();
 }
+
+/** TODO:
+ * 1. fix segmenation fault when there are no 2 operands in command
+ * 2. error reporting when there are more than 2 operands in command
+ * 3. error reporting a,b,c,
+ * 4. 
+*/

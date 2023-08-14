@@ -28,7 +28,7 @@ int PRINTLABEL(label *labelTable, int labelCount){
     return 0;
 }
 
-int main(int argc, char **argv){
+int main(int argc, char** argv){
     label *labelTable;
     extentlabel *head;
     int dc, ic, labelCount, status;

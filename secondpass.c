@@ -126,19 +126,19 @@ int complete_extent_data(char*** icImage, label* labelTable, extentlabel** head,
 }
 
 int get_data_entry(label* labelTable, extentlabel** head, int labelCount, int ic){
-    int i, boost;
+    int i;
 
     for (i = 0; i < labelCount; i++){
         if (strcmp(labelTable[i].labelName, (*head)->labelName) == 0){
             (*head)->address.addr = (int*)malloc(sizeof(int));
-            (*head)->address.addr[0] = labelTable[i].address + boost;
+            (*head)->address.addr[0] = labelTable[i].address;
             return TRUE;
         }
     }
 
     return TRUE;
-    // *sp_status = TRUE;   /* move this to error_handler() as well */
-    // return FALSE;   /* return error_handler() - no such label found  */
+    /* *sp_status = TRUE;   */ /* move this to error_handler() as well */
+    /* return FALSE; */   /* return error_handler() - no such label found  */
 }
 
 int get_data_extern(char*** icImage, extentlabel** head, int ic){
@@ -170,7 +170,7 @@ char binary_to_base64(char* base64Table, char* binary, int start){
     return base64Table[decimalValue];
 }
 
-// DONT LIKE THIS FUNCTION, CHANGE THE WHOLE MECHANISM
+/* DONT LIKE THIS FUNCTION, CHANGE THE WHOLE MECHANISM */
 int update_datalabels_addr(label* labelTable, int labelCount, int ic){
     int i;
 

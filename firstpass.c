@@ -538,6 +538,8 @@ int datastring_handler(char*** dcImage, char** token, char* originalLine, int* d
 
     if (paramCnt != -1)
         add_data_word(dcImage, params, dc, paramCnt, lineNum);
+
+    return TRUE;
 }
 
 int operation_handler(char*** icImage, label** labelTable, char** token, char* originalLine, int* ic, int* labelCount, int commandCode, int lineNum, char sourceSequenceArray[16][4], char destSequenceArray[16][4]){
@@ -564,6 +566,8 @@ int operation_handler(char*** icImage, label** labelTable, char** token, char* o
             }
         }
     }    
+
+    return TRUE;
 }
 
 int fp_status;
@@ -576,7 +580,7 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
     char sourceSequenceArray[16][4], destSequenceArray[16][4];
     int commandCode, lineNum, isLabel, counterVal, isData;
 
-    fp_status = TRUE; // stopped here. not sure i should use global variable
+    fp_status = TRUE;  /* stopped here. not sure i should use global variable */
     *dc = *ic = *labelCount = lineNum = 0;
     /* move this to assembler program, maybe make this global variable */
     set_sequence_array_source(sourceSequenceArray);
@@ -609,7 +613,7 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
             if (commandCode == _ENTRY || commandCode == _EXTERN)
                 fp_warning_handler(Label_Points_At_ExternEntry, lineNum);
             else
-                add_label(labelTable, labelName, labelCount, counterVal, isData, lineNum); // remove ic and dc, make them global variables
+                add_label(labelTable, labelName, labelCount, counterVal, isData, lineNum);  /* remove ic and dc, make them global variables */
               /* NOTE: if label there is not command, and then counter isnt pointing anywhere valid, what do we do? */
         }
     }

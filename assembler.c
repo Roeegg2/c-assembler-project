@@ -34,7 +34,8 @@ int main(int argc, char** argv){
     int dc, ic, labelCount, status;
     char **dcImage;
     char **icImage;
-    int i;
+    int i, fpf;
+    fpf = 0;
     
     for (i = 1; i < argc; i++){
         dcImage = (char** )malloc(sizeof(char*));
@@ -43,11 +44,10 @@ int main(int argc, char** argv){
         head = NULL;
 
         status = invoke_preassembler(argv[i]);
-        if (status != ERROR)
+        if (status == TRUE)
             status = invoke_firstpass(&dcImage, &icImage, &labelTable, &head, argv[i], &dc, &ic, &labelCount);
-        if (status != ERROR)
-            invoke_secondpass(&dcImage, &icImage, labelTable, head, argv[i], labelCount, dc, ic);
-        
+        if (status == TRUE)
+            invoke_secondpass(&dcImage, &icImage, labelTable, head, argv[i], labelCount, dc, ic, &fpf);
 
         /* printf("ext/ent list:\n");
         PRINTEXTENT(head);
@@ -71,6 +71,7 @@ int main(int argc, char** argv){
         free_extent(head);
     }
 
+    printf("\nProgram finished.\nFully processed %d/%d files.\n", fpf, i-1);
     return 0;
 }
 

@@ -8,9 +8,8 @@
 /* secondpass_invoker(&dcImage, &icImage, labelTable, &head, filename, dc, ic, labelCount); */
 int sp_status;
 
-int invoke_secondpass(char*** dcImage, char*** icImage, label* labelTable, extentlabel* head, char* filename, int labelCount, int dc, int ic){
+int invoke_secondpass(char*** dcImage, char*** icImage, label* labelTable, extentlabel* head, char* filename, int labelCount, int dc, int ic, int* fpf){
     char base64Table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\0";
-    int sp_status;
     
     sp_status = TRUE;
 
@@ -18,9 +17,10 @@ int invoke_secondpass(char*** dcImage, char*** icImage, label* labelTable, exten
     complete_extent_data(icImage, labelTable, head, ic, labelCount);
     map_labels(icImage, labelTable, head, ic, labelCount);
 
-    if (sp_status != ERROR){
+    if (sp_status == TRUE){
         write_extent_file(labelTable, head, filename, labelCount);
         write_ob_file(*icImage, *dcImage, filename, base64Table, ic, dc);
+        (*fpf)++;
     }
     
     return TRUE;
@@ -44,8 +44,10 @@ int map_labels(char*** icImage, label* labelTable, extentlabel* head, int ic, in
                 (*icImage)[i][11] = '0';
                 (*icImage)[i][12] = '\0'; 
             }
-            else if (find_extent_label(head, (*icImage)[i]) == NULL)
-                sp_error_handler(Unknown_Label, 999); /* need to change lineNum here */
+ /* The error we are checking: if an unknown label is used as an operand  
+ Doesnt work on some cases because we only loop over icArray, not dcArray            
+ else if (find_extent_label(head, (*icImage)[i]) == NULL)
+                sp_error_handler(Unknown_Label, 999);  need to change lineNum here  */
         }
     }
 
@@ -57,6 +59,7 @@ int write_ob_file(char** icArray, char** dcArray, char* filename, char* base64Ta
     int i;
 
     obFile = open_file(filename, ".ob", "w");
+    CHECK_FILE_STATUS(obFile)
 
     fprintf(obFile, "%d\t%d\n", ic, dc);
     for (i = 0; i < ic; i++){ /* add error detection if there is a label unconvered */
@@ -80,20 +83,15 @@ int write_extent_file(label* labelTable, extentlabel* head, char* filename, int 
 
     extFile = open_file(filename, ".ext", "w");
     entFile = open_file(filename, ".ent", "w");
+    
+    CHECK_FILE_STATUS(extFile)
+    CHECK_FILE_STATUS(entFile)
 
     while (head != NULL){
-        if (head->type == _EXTERN){
-            if (find_label(labelTable, head->labelName, labelCount) == NULL)
-                print_extern(*head, extFile);
-            else
-                sp_error_handler(Extern_Declared, head->line); /* label marked as extern but is also declared in code */
-        }
-        else{
-            if (find_label(labelTable, head->labelName, labelCount) != NULL)
-                fprintf(entFile, "%s\t%d\n", head->labelName, head->address.addr[0]);
-            else
-                sp_error_handler(Entry_Not_Declared, head->line); /* label marked as .entry but isnt declared in code*/
-        }
+        if (head->type == _EXTERN)
+            print_extern(*head, extFile);
+        else
+            fprintf(entFile, "%s\t%d\n", head->labelName, head->address.addr[0]);
 
         head = head->next;
     }
@@ -115,10 +113,16 @@ int print_extern(extentlabel head, FILE* extFile){
 
 int complete_extent_data(char*** icImage, label* labelTable, extentlabel* head, int ic, int labelCount){
     while (head != NULL){
-        if (head->type == _ENTRY)
+        if (head->type == _ENTRY){
             get_data_entry(labelTable, head, labelCount, ic);
-        else
+            if (find_label(labelTable, head->labelName, labelCount) == NULL)
+                sp_error_handler(Entry_Not_Declared, head->line);
+        }
+        else{
             get_data_extern(icImage, head, ic);
+            if (find_label(labelTable, head->labelName, labelCount) != NULL)
+                sp_error_handler(Extern_Declared, head->line);
+        }
 
         head = head->next;
     }   
@@ -183,10 +187,10 @@ int update_datalabels_addr(label* labelTable, int labelCount, int ic){
 int sp_error_handler(int errorCode, int lineNum){
     switch (errorCode){
         case Extern_Declared:
-            printf("Error: label marked as extern but is also declared in code. Line %d\n", lineNum);
+            printf("Error: label marked 'extern' but is also declared in code. Line %d\n", lineNum);
             break;
         case Entry_Not_Declared:
-            printf("Error: label marked as .entry but is not declared in code. Line %d\n", lineNum);
+            printf("Error: label marked 'entry' but is not declared in code. Line %d\n", lineNum);
             break;
         case Unknown_Label:
             printf("Error: unknown label is referenced in code. Line %d\n", lineNum);

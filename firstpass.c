@@ -403,17 +403,17 @@ int get_comma_param_cnt(char* line, int lineNum){
     if (line == NULL) /* might be problem */
         return TRUE;
 
-    while (line[i] != '\n'){
+    while (line[i] != '\n' && line[i] != '\0'){
         if (line[i] == ','){
             status2 = status1;
             status1 = _COMMA;
             commaCnt++; 
         }
-        else if (line[i] != ' ' && line[i] != '\t'){
+        else if (line[i] != ' ' && line[i] != '\t' && line[i] != '\n' && line[i] != '\0'){
             status2 = status1;
             status1 = _CHAR;
             paramCnt++; 
-            while (line[i] != ' ' && line[i] != '\t' && line[i] != '\n' && line[i] != ',')
+            while (line[i] != ' ' && line[i] != '\t' && line[i] != '\n' && line[i] != '\0' && line[i] != ',')
                 i++;
             i--;
         }

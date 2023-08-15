@@ -15,11 +15,11 @@ typedef struct macro{
     struct macro* next;
 } macro;
 
-int check_for_macro_erros(char** token, macro* head, int* status, int lineNum);
+int check_for_macro_erros(char** token, macro* head, int lineNum);
 macro* add_macro_node(char* macroName, macro* head);
 macro* find_macro(macro* head, char* token);
 int free_macros(macro* head);
-int get_macro_code(FILE** asFile, macro* head, char* originalLine, char* line, int* lineNum, int* status);
+int get_macro_code(FILE** asFile, macro* head, char* originalLine, char* line, int* lineNum);
 int write_line(FILE** amFile, macro* head, char* token, char* writeLine);
 int invoke_preassembler(char* filename);
 int error_handler(int errorCode, int lineNum);

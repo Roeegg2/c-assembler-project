@@ -1,3 +1,5 @@
-; file ps.as
+mcro m1
+prn -4
+endmcro
 
-W: mov @r2, L1
+m1: mov @r1, @r2

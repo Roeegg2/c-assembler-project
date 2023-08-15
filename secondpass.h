@@ -2,7 +2,7 @@
 
 enum SecondpassErrors {Extern_Declared = 0, Entry_Not_Declared, Unknown_Label};
 
-int invoke_secondpass(char*** dcImage, char*** icImage, label* labelTable, extentlabel* head, char* filename, int labelCount, int ic, int dc);
+int invoke_secondpass(char*** dcImage, char*** icImage, label* labelTable, extentlabel* head, char* filename, int labelCount, int dc, int ic, int* fpf);
 int map_labels(char*** icImage, label* labelTable, extentlabel* head, int ic, int labelCount);
 int write_ob_file(char** icArray, char** dcArray, char* filename, char* base64Table, int ic, int dc);
 int write_extent_file(label* labelTable, extentlabel* head, char* filename, int labelCount);

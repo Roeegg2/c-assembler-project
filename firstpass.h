@@ -62,7 +62,7 @@ int datastring_handler(char*** dcImage, char** token, char* originalLine, int* d
 int extent_handler(extentlabel** head, char** token, char* originalLine, int commandCode, int lineNum);
 
 int analyze_data(char** token, int *params, int lineNum);
-int analyze_string(char* stringLine, int* stringConverted, int lineNum);
+int analyze_string(int** stringConverted, char* stringLine, int lineNum);
 
 int get_type_val(label** labelTable, operand* operandd, int* val, int labelCount); /* GO OVER THIS AND REWRITE THE WHOLE MECHANISM THIS FUNCITON IS PART OF */
 int get_operand_value(operand* op, char* token, int lineNum);

@@ -131,20 +131,20 @@ int is_operation(char *opname){
     return -1;
 }
 
-int analyze_string(char* stringLine, int* stringConverted, int lineNum){
+int analyze_string(int** stringConverted, char* stringLine, int lineNum){
     int i;
 
     if (stringLine[0] != '\"' || stringLine[strlen(stringLine) - 1] != '\"')
         return fp_error_handler(Illegal_String_Declaration, lineNum);
 
-    stringLine++;
-    stringLine[-1] = '\0'; /* this line might cause problem: i need to check if it wont cause problem and if its even ok to do like that. */
+    stringLine[0] = '\0'; /* this line might cause problem: i need to check if it wont cause problem and if its even ok to do like that. */
     stringLine[strlen(stringLine) - 1] = '\0';
+    stringLine++; 
 
     for (i = 0; i < strlen(stringLine); i++){
-        stringConverted[i] = stringLine[i];
+        (*stringConverted) = (int*)realloc((*stringConverted), sizeof(int) * (i + 1));
+        (*stringConverted)[i] = (int)stringLine[i];
     }
-    stringConverted[i] = 0;
 
     return i + 1;
     /* write_data(stringConverted, strlen(stringLine)+1, lineNum); */
@@ -454,7 +454,7 @@ int call_datastring_analyzer(char** lineToken, int** params, char* orgLineToken,
         return get_comma_param_cnt(orgLineToken, lineNum);
     }
     
-    return analyze_string(*lineToken, *params, lineNum);
+    return analyze_string(params, *lineToken, lineNum);
 }
 
   /* get the pointer to the first parameter in the line */
@@ -621,6 +621,7 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
         }
     }
 
+    fclose(amFile);
       /* close files */
       /* free memory */
     return fp_status;

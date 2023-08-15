@@ -58,4 +58,6 @@ int free_counter_array(char*** counterImage, int counter){
         free((*counterImage)[i]);
     
     free((*counterImage));
+    
+    return TRUE;
 }

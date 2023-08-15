@@ -37,10 +37,12 @@ int map_labels(char*** icImage, label* labelTable, int ic, int labelCount){
             foo = find_label(labelTable, (*icImage)[i], labelCount);
 
             if (foo != NULL){
-                (*icImage)[i] = (char*)realloc((*icImage)[i], sizeof(char) * 12);
+                (*icImage)[i] = (char*)realloc((*icImage)[i], sizeof(char) * 13);
                     
                 convert_to_binary((*icImage)[i], foo->address, 10);
-                strcat((*icImage)[i], "10");   /* adding ARE */
+                (*icImage)[i][10] = '1';  /* adding ARE */
+                (*icImage)[i][11] = '0';
+                (*icImage)[i][12] = '\0'; 
             }
             else{
                 sp_status = ERROR;   /* move this to error_handler() as well */
@@ -97,7 +99,10 @@ int write_extent_file(label* labelTable, extentlabel* head, char* filename, int 
 
         head = head->next;
     }
-
+    
+    fclose(extFile);
+    fclose(entFile);
+    
     return TRUE;
 }
 

@@ -1,5 +1,8 @@
 #ifndef _UTILS_H
 #define _UTILS_H
+
+#include "shared.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

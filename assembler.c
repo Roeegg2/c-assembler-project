@@ -46,7 +46,7 @@ int main(int argc, char** argv){
         if (status != ERROR)
             status = invoke_firstpass(&dcImage, &icImage, &labelTable, &head, argv[i], &dc, &ic, &labelCount);
         if (status != ERROR)
-            invoke_secondpass(&dcImage, &icImage, labelTable, &head, argv[i], labelCount, dc, ic);
+            invoke_secondpass(&dcImage, &icImage, labelTable, head, argv[i], labelCount, dc, ic);
         
 
         /* printf("ext/ent list:\n");

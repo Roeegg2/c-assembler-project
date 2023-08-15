@@ -28,8 +28,10 @@ FILE* open_file(char* filename, char* ending, char* mode){
 
 int add_to_counterArray(char ***counterArray, int *counter, char *toAdd){
     (*counterArray) = (char **)realloc((*counterArray), sizeof(char *) * (*counter + 1));
+    CHECK_ALLOCATION_ERROR(*counterArray)
     (*counterArray)[*counter] = (char *)malloc(sizeof(char) * MAX_LABEL_LENGTH);
-
+    CHECK_ALLOCATION_ERROR(*counterArray)
+    
     strcpy((*counterArray)[*counter], toAdd);
     (*counter)++;
 

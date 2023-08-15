@@ -151,13 +151,14 @@ int analyze_string(char* stringLine, int* stringConverted, int lineNum){
 }
 
 int analyze_data(char** token, int *params, int lineNum){
+    char* endptr;
     int i;
 
     i = 0;
     while (*token != NULL){
         if (**token != ','){
             if (strspn((*token), "-+0123456789") == strlen((*token))){
-                params[i] = atoi((*token));
+                params[i] = strtol(*token, &endptr, 10);
                 if (params[i] < -2048 || params[i] > 2047)
                     return fp_error_handler(Parameter_Out_Of_Bounds, lineNum);
             }
@@ -288,15 +289,16 @@ int add_operand_words(char ***icImage, label **labelTable, operation *op, int *i
 
 int get_operand_value(operand *op, char *token, int lineNum){
     char foo[1];
+    char* endptr;
 
     token = strtok(NULL, PARAM_DELIMITERS);
     if (token == NULL){
-        op->val.numericVal = atoi(token);
+        op->val.numericVal = 0;
         op->addrMode = No_Operand;
     }
     /* not sure if can input + aswell, check that */
     else if (strspn(token, "+-0123456789") == strlen(token)){
-        op->val.numericVal = atoi(token);
+        op->val.numericVal = strtol(token, &endptr, 10);
         op->addrMode = Immediate;
         if (op->val.numericVal > 511 || op->val.numericVal < -512)
             return fp_error_handler(Parameter_Out_Of_Bounds, lineNum);
@@ -307,7 +309,7 @@ int get_operand_value(operand *op, char *token, int lineNum){
             return fp_error_handler(Undefined_Register, lineNum);
         foo[0] = token[2];
         if (strspn(foo, "01234567") == 1){
-            op->val.regNum = atoi(foo);
+            op->val.regNum = strtol(token, &endptr, 10);
             op->addrMode = Register;
         }
         else

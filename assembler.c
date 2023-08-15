@@ -37,9 +37,9 @@ int main(int argc, char** argv){
     int i;
     
     for (i = 1; i < argc; i++){
-        dcImage = (char **)malloc(sizeof(char *));
-        icImage = (char **)malloc(sizeof(char *));
-        labelTable = (label *)malloc(sizeof(label));
+        dcImage = (char** )malloc(sizeof(char*));
+        icImage = (char** )malloc(sizeof(char*));
+        labelTable = (label* )malloc(sizeof(label));
         head = NULL;
 
         status = invoke_preassembler(argv[i]);

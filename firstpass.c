@@ -137,20 +137,24 @@ int analyze_string(int** stringConverted, char* stringLine, int lineNum){
     if (stringLine[0] != '\"' || stringLine[strlen(stringLine) - 1] != '\"')
         return fp_error_handler(Illegal_String_Declaration, lineNum);
 
-    stringLine[0] = '\0'; /* this line might cause problem: i need to check if it wont cause problem and if its even ok to do like that. */
+    /* I dont really like the way were doing it here */
     stringLine[strlen(stringLine) - 1] = '\0';
+    stringLine[0] = '\0';
     stringLine++; 
 
     for (i = 0; i < strlen(stringLine); i++){
         (*stringConverted) = (int*)realloc((*stringConverted), sizeof(int) * (i + 1));
         (*stringConverted)[i] = (int)stringLine[i];
     }
+    /*adding the null terminator word */
+    (*stringConverted) = (int*)realloc((*stringConverted), sizeof(int) * (i + 1));
+    (*stringConverted)[i] = '0';
 
-    return i + 1;
+    return i+1;
     /* write_data(stringConverted, strlen(stringLine)+1, lineNum); */
 }
 
-int analyze_data(char** token, int *params, int lineNum){
+int analyze_data(char** token, int** params, int lineNum){
     char* endptr;
     int i;
 
@@ -158,8 +162,9 @@ int analyze_data(char** token, int *params, int lineNum){
     while (*token != NULL){
         if (**token != ','){
             if (strspn((*token), "-+0123456789") == strlen((*token))){
-                params[i] = strtol(*token, &endptr, 10);
-                if (params[i] < -2048 || params[i] > 2047)
+                (*params) = (int*)realloc((*params), sizeof(int) * (i + 1));
+                (*params)[i] = (int)strtol(*token, &endptr, 10);
+                if ((*params)[i] < -2048 || (*params)[i] > 2047)
                     return fp_error_handler(Parameter_Out_Of_Bounds, lineNum);
             }
             else
@@ -450,7 +455,7 @@ int call_datastring_analyzer(char** lineToken, int** params, char* orgLineToken,
     *lineToken = strtok(NULL, PARAM_DELIMITERS);
 
     if (commandCode == _DATA){
-        analyze_data(lineToken, *params, lineNum);
+        analyze_data(lineToken, params, lineNum);
         return get_comma_param_cnt(orgLineToken, lineNum);
     }
     

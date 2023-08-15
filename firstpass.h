@@ -61,7 +61,7 @@ int operation_handler(char*** icImage, label** labelTable, char** token, char* o
 int datastring_handler(char*** dcImage, char** token, char* originalLine, int* dc, int commandCode, int lineNum);
 int extent_handler(extentlabel** head, char** token, char* originalLine, int commandCode, int lineNum);
 
-int analyze_data(char** token, int *params, int lineNum);
+int analyze_data(char** token, int** params, int lineNum);
 int analyze_string(int** stringConverted, char* stringLine, int lineNum);
 
 int get_type_val(label** labelTable, operand* operandd, int* val, int labelCount); /* GO OVER THIS AND REWRITE THE WHOLE MECHANISM THIS FUNCITON IS PART OF */

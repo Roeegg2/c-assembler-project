@@ -8,20 +8,18 @@
 /* secondpass_invoker(&dcImage, &icImage, labelTable, &head, filename, dc, ic, labelCount); */
 int sp_status;
 
-int invoke_secondpass(char*** dcImage, char*** icImage, label* labelTable, extentlabel** head, char* filename, int labelCount, int dc, int ic){
-    extentlabel* temp;
+int invoke_secondpass(char*** dcImage, char*** icImage, label* labelTable, extentlabel* head, char* filename, int labelCount, int dc, int ic){
     char base64Table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/\0";
     int sp_status;
     
     sp_status = TRUE;
-    temp = *head;
 
     update_datalabels_addr(labelTable, labelCount, ic);
     complete_extent_data(icImage, labelTable, head, ic, labelCount);
     map_labels(icImage, labelTable, ic, labelCount);
 
     if (sp_status != ERROR){
-        write_extent_file(labelTable, temp, filename, labelCount);
+        write_extent_file(labelTable, head, filename, labelCount);
         write_ob_file(*icImage, *dcImage, filename, base64Table, ic, dc);
     }
     
@@ -112,26 +110,26 @@ int print_extern(extentlabel head, FILE* extFile){
     return 0;
 }
 
-int complete_extent_data(char*** icImage, label* labelTable, extentlabel** head, int ic, int labelCount){
-    while ((*head) != NULL){
-        if ((*head)->type == _ENTRY)
+int complete_extent_data(char*** icImage, label* labelTable, extentlabel* head, int ic, int labelCount){
+    while (head != NULL){
+        if (head->type == _ENTRY)
             get_data_entry(labelTable, head, labelCount, ic);
         else
             get_data_extern(icImage, head, ic);
 
-        (*head) = (*head)->next;
+        head = head->next;
     }   
 
     return TRUE;
 }
 
-int get_data_entry(label* labelTable, extentlabel** head, int labelCount, int ic){
+int get_data_entry(label* labelTable, extentlabel* head, int labelCount, int ic){
     int i;
 
     for (i = 0; i < labelCount; i++){
-        if (strcmp(labelTable[i].labelName, (*head)->labelName) == 0){
-            (*head)->address.addr = (int*)malloc(sizeof(int));
-            (*head)->address.addr[0] = labelTable[i].address;
+        if (strcmp(labelTable[i].labelName, head->labelName) == 0){
+            head->address.addr = (int*)malloc(sizeof(int));
+            head->address.addr[0] = labelTable[i].address;
             return TRUE;
         }
     }
@@ -141,15 +139,15 @@ int get_data_entry(label* labelTable, extentlabel** head, int labelCount, int ic
     /* return FALSE; */   /* return error_handler() - no such label found  */
 }
 
-int get_data_extern(char*** icImage, extentlabel** head, int ic){
+int get_data_extern(char*** icImage, extentlabel* head, int ic){
     int i;
     
     for (i = 0; i < ic; i++){
         printf("%s\n", (*icImage)[i]);
-        if (strcmp((*head)->labelName, (*icImage)[i]) == 0){
-            (*head)->address.count++;
-            (*head)->address.addr = (int*)realloc((*head)->address.addr, sizeof(int) * ((*head)->address.count));
-            (*head)->address.addr[(*head)->address.count-1] = i+100;  /* not sure this is the correct address i should be assigning */ 
+        if (strcmp(head->labelName, (*icImage)[i]) == 0){
+            head->address.count++;
+            head->address.addr = (int*)realloc(head->address.addr, sizeof(int) * (head->address.count));
+            head->address.addr[head->address.count-1] = i+100;  /* not sure this is the correct address i should be assigning */ 
             strcpy((*icImage)[i], "000000000001");
         }
     }

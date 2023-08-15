@@ -541,6 +541,7 @@ int datastring_handler(char*** dcImage, char** token, char* originalLine, int* d
     if (paramCnt != -1)
         add_data_word(dcImage, params, dc, paramCnt, lineNum);
 
+    free(params);
     return TRUE;
 }
 

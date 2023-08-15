@@ -37,3 +37,25 @@ int add_to_counterArray(char ***counterArray, int *counter, char *toAdd){
 
     return TRUE;
 }
+
+int free_extent(extentlabel* head){
+    extentlabel* foo;
+
+    while (head != NULL){
+        free(head->address.addr);
+        foo = head;
+        head = head->next;
+        free(foo);
+    }
+
+    return TRUE;
+}
+
+int free_counter_array(char*** counterImage, int counter){
+    int i;
+
+    for (i = 0; i < counter; i++)
+        free((*counterImage)[i]);
+    
+    free((*counterImage));
+}

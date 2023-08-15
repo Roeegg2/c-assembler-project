@@ -48,6 +48,7 @@ int main(int argc, char** argv){
         if (status != ERROR)
             invoke_secondpass(&dcImage, &icImage, labelTable, &head, argv[i], labelCount, dc, ic);
         
+
         /* printf("ext/ent list:\n");
         PRINTEXTENT(head);
         printf("instructions words:\n");
@@ -58,7 +59,16 @@ int main(int argc, char** argv){
         PRINTLABEL(labelTable, labelCount); */
 
         /* close files */
-        /* free memory */
+        /**
+         * free dcImage
+         * free icImage
+         * free labelTable
+        */
+
+        free(labelTable);
+        free_counter_array(&dcImage, dc);
+        free_counter_array(&icImage, ic);
+        free_extent(head);
     }
 
     return 0;

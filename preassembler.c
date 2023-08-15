@@ -84,13 +84,13 @@ int get_macro_code(FILE** asFile, macro* head, char* originalLine, char* line, i
 }
 
 int free_macros(macro* head){
-    macro* temp;
+    macro* foo;
 
     while(head != NULL) {
         free(head->code);
-        temp = head; 
+        foo = head; 
         head = head->next;
-        free(temp); 
+        free(foo); 
     }
 
     return TRUE;

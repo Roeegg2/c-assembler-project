@@ -189,30 +189,32 @@ int add_data_word(char ***dcImage, int *params, int *dc, int paramCnt, int lineN
     return TRUE;
 }
 
-int get_extent_label_type(extentlabel* head, char* labelName){
+/* get_extent_label_type */
+extentlabel* find_extent_label(extentlabel* head, char* labelName){
     while (head != NULL){
         if (strcmp(head->labelName, labelName) == 0)
-            return head->type;
+            return head;
         head = head->next;
     }
 
-    return FALSE;
+    return NULL;
 }
 
 /* want to change implementation */
 int add_extent_label(extentlabel** head, char** token, int type, int lineNum){
     extentlabel* newNode;
     extentlabel* temp;
-    int changemename;
     newNode = (extentlabel *)calloc(1, sizeof(extentlabel));
 
-    changemename = get_extent_label_type(*head, *token);
-    if (changemename != FALSE){
-        if (changemename == type)
+    /*checking and making sure that the label hasnt been declared yet. Maybe move to a differnt function?*/
+    temp = find_extent_label(*head, *token);
+    if (temp != NULL){
+        if (temp->type == type)
             fp_warning_handler(Extent_Label_Already_Defined_Similarly, lineNum);
         else
             return fp_error_handler(Extent_Label_Already_Defined_Differently, lineNum);
     }
+
     if ((*head) == NULL)
         (*head) = newNode;
 
@@ -395,30 +397,30 @@ int set_operands(operation *op, operand *operand1, operand *operand2){
 }
 
 int get_comma_param_cnt(char* line, int lineNum){
-    int i, fp_status1, fp_status2, paramCnt, commaCnt;
+    int i, status1, status2, paramCnt, commaCnt;
 
-    i = paramCnt = commaCnt = fp_status1 = fp_status2 = FALSE;
-    if (line == NULL)
+    i = paramCnt = commaCnt = status1 = status2 = FALSE;
+    if (line == NULL) /* might be problem */
         return TRUE;
 
-    while (line[i] != '\0'){
+    while (line[i] != '\n'){
         if (line[i] == ','){
-            fp_status2 = fp_status1;
-            fp_status1 = _COMMA;
+            status2 = status1;
+            status1 = _COMMA;
             commaCnt++; 
         }
         else if (line[i] != ' ' && line[i] != '\t'){
-            fp_status2 = fp_status1;
-            fp_status1 = _CHAR;
+            status2 = status1;
+            status1 = _CHAR;
             paramCnt++; 
-            while (line[i] != ' ' && line[i] != '\t' && line[i] != '\0' && line[i] != ',')
+            while (line[i] != ' ' && line[i] != '\t' && line[i] != '\n' && line[i] != ',')
                 i++;
             i--;
         }
-        if (fp_status1 == fp_status2 && fp_status1 != FALSE){
-            if (fp_status1 == _COMMA)
+        if (status1 == status2 && status1 != FALSE){
+            if (status1 == _COMMA)
                 return fp_error_handler(Double_Comma, lineNum);   /* two commas in a row */
-            else if (fp_status1 == _CHAR)
+            else if (status1 == _CHAR)
                 return fp_error_handler(Missing_Comma, lineNum);   /* two parameters in a row */
         }
         i++;

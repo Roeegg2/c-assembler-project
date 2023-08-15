@@ -91,7 +91,6 @@ int is_label(char** token, char* labelName, char* line, int lineNum);
 int add_label(label **labelTable, char *labelName, int *labelCount, int counterValue, int isData, int lineNum);
 
 int add_extent_label(extentlabel** head, char** token, int type, int lineNum);
-int get_extent_label_type(extentlabel* head, char* labelName);
 
 int add_one(char binary[]);
 int flip_negative(char binary[]);

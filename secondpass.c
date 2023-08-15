@@ -16,7 +16,7 @@ int invoke_secondpass(char*** dcImage, char*** icImage, label* labelTable, exten
 
     update_datalabels_addr(labelTable, labelCount, ic);
     complete_extent_data(icImage, labelTable, head, ic, labelCount);
-    map_labels(icImage, labelTable, ic, labelCount);
+    map_labels(icImage, labelTable, head, ic, labelCount);
 
     if (sp_status != ERROR){
         write_extent_file(labelTable, head, filename, labelCount);
@@ -27,7 +27,7 @@ int invoke_secondpass(char*** dcImage, char*** icImage, label* labelTable, exten
 }
 
   /* swap each label with its address, plus error reporting  */
-int map_labels(char*** icImage, label* labelTable, int ic, int labelCount){
+int map_labels(char*** icImage, label* labelTable, extentlabel* head, int ic, int labelCount){
       /* go over the icImage and if there is a label (aka an element in the array which its first char isnt 0 or 1) */
     label* foo;
     int i;
@@ -44,10 +44,8 @@ int map_labels(char*** icImage, label* labelTable, int ic, int labelCount){
                 (*icImage)[i][11] = '0';
                 (*icImage)[i][12] = '\0'; 
             }
-            else{
-                sp_status = ERROR;   /* move this to error_handler() as well */
-                return FALSE;   /* return error_handler() - label declared but not found */
-            }
+            else if (find_extent_label(head, (*icImage)[i]) == NULL)
+                sp_error_handler(Unknown_Label, 999); /* need to change lineNum here */
         }
     }
 
@@ -129,14 +127,13 @@ int complete_extent_data(char*** icImage, label* labelTable, extentlabel* head, 
 }
 
 int get_data_entry(label* labelTable, extentlabel* head, int labelCount, int ic){
-    int i;
+    label* foo;
 
-    for (i = 0; i < labelCount; i++){
-        if (strcmp(labelTable[i].labelName, head->labelName) == 0){
-            head->address.addr = (int*)malloc(sizeof(int));
-            head->address.addr[0] = labelTable[i].address;
-            return TRUE;
-        }
+    foo = find_label(labelTable, head->labelName, labelCount);
+    if (foo != NULL){
+        head->address.addr = (int*)malloc(sizeof(int));
+        head->address.addr[0] = foo->address;
+        return TRUE;
     }
 
     return TRUE;
@@ -148,7 +145,6 @@ int get_data_extern(char*** icImage, extentlabel* head, int ic){
     int i;
     
     for (i = 0; i < ic; i++){
-        printf("%s\n", (*icImage)[i]);
         if (strcmp(head->labelName, (*icImage)[i]) == 0){
             head->address.count++;
             head->address.addr = (int*)realloc(head->address.addr, sizeof(int) * (head->address.count));
@@ -191,6 +187,9 @@ int sp_error_handler(int errorCode, int lineNum){
             break;
         case Entry_Not_Declared:
             printf("Error: label marked as .entry but is not declared in code. Line %d\n", lineNum);
+            break;
+        case Unknown_Label:
+            printf("Error: unknown label is referenced in code. Line %d\n", lineNum);
             break;
     }
 

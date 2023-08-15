@@ -40,6 +40,7 @@ typedef struct extentlabel{
 } extentlabel;
 
 label* find_label(label* labelTable, char* labelName, int labelCount);
+extentlabel* find_extent_label(extentlabel* head, char* labelName);
 int convert_to_binary(char binary[], int number, int size);
 
 #endif

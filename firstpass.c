@@ -148,7 +148,7 @@ int analyze_string(int** stringConverted, char* stringLine, int lineNum){
     }
     /*adding the null terminator word */
     (*stringConverted) = (int*)realloc((*stringConverted), sizeof(int) * (i + 1));
-    (*stringConverted)[i] = '0';
+    (*stringConverted)[i] = 0;
 
     return i+1;
     /* write_data(stringConverted, strlen(stringLine)+1, lineNum); */
@@ -247,17 +247,7 @@ int is_label(char **token, char *labelName, char *line, int lineNum){
     if (*token == NULL)
         return fp_error_handler(Blank_Label_Declaration, lineNum);
 
-    if (is_extent_instruction(labelName) != FALSE || is_operation(labelName) != -1 || is_datastring_instruction(labelName) != FALSE)
-        return fp_error_handler(Illegal_Comma_Name_Saved_Word, lineNum);
-    
-    if (!(65 <= *labelName && *labelName <= 90) && !(97 <= *labelName && *labelName <= 122))
-        return fp_error_handler(Illegal_Comma_Name_First_Char, lineNum);
-
-    if (strspn(labelName, "012345678abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") != strlen(labelName))
-        return fp_error_handler(Illegal_Comma_Name_Illegal_Chars, lineNum);
-    
-
-    return TRUE;
+    return legal_label_macro_name(labelName, lineNum, &fp_error_handler);    
 }
 
 label* find_label(label *labelTable, char *labelName, int labelCount){
@@ -524,8 +514,11 @@ int set_sequence_array_source(char sequenceArray[16][4]){
 int extent_handler(extentlabel** head, char** token, char* originalLine, int commandCode, int lineNum){
     char* paramsPtr;
 
-    *token = strtok(NULL, PARAM_DELIMITERS);
     paramsPtr = get_param_pointer(originalLine, LAST_CHARACTER(*token));
+    *token = strtok(NULL, " \t\n");
+
+    if (*token == NULL)
+        return fp_error_handler(Blank_Extent_Marking, lineNum);
 
     if (get_comma_param_cnt(paramsPtr, lineNum) != ERROR){
         while (*token != NULL){
@@ -598,7 +591,7 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
 
     while (read_input_file(&amFile, filename, ".am", originalLine, &lineNum) == TRUE){
         strcpy(line, originalLine);
-        token = strtok(line, PARAM_DELIMITERS);
+        token = strtok(line, " \t\n");
 
         isLabel = is_label(&token, labelName, line, lineNum);   /* NOTE: if label declaration is emtpy we get segmantation fault. */
                     
@@ -673,7 +666,16 @@ int fp_warning_handler(int warningCode, int lineNum){
 }
 
 int fp_error_handler(int errorCode, int lineNum){
-    switch (errorCode){
+    switch (errorCode){  
+    case Illegal_Name_First_Char:
+        printf("Error: Illegal label name. First character must be a letter. Line %d\n", lineNum);
+        break;
+    case Illegal_Name_Illegal_Chars:
+        printf("Error: Illegal label name. Label name can only contain letters and numbers. Line %d\n", lineNum);
+        break;
+    case Illegal_Name_Saved_Word:
+        printf("Error: Illegal label name. Label cant be named a saved word Line %d\n", lineNum);
+        break;  
     case Unknown_Command:
         printf("Error: Unknown command in line %d\n", lineNum);
         break;
@@ -716,15 +718,6 @@ int fp_error_handler(int errorCode, int lineNum){
     case Label_Already_Defined:
         printf("Error: Label already defined beforehand. Line %d\n", lineNum);
         break;
-    case Illegal_Comma_Name_Saved_Word:
-        printf("Error: Illegal label name. Label cant be named a saved word Line %d\n", lineNum);
-        break;    
-    case Illegal_Comma_Name_First_Char:
-        printf("Error: Illegal label name. First character must be a letter. Line %d\n", lineNum);
-        break;
-    case Illegal_Comma_Name_Illegal_Chars:
-        printf("Error: Illegal label name. Label name can only contain letters and numbers. Line %d\n", lineNum);
-        break;
     case Extent_Label_Already_Defined_Differently:
         printf("Error: Extent label already defined a different type. Line %d\n", lineNum);
         break;
@@ -736,6 +729,9 @@ int fp_error_handler(int errorCode, int lineNum){
         break;
     case Blank_Label_Declaration:
         printf("Error: No code found after label declaration. Line %d\n", lineNum);
+        break;
+    case Blank_Extent_Marking:
+        printf("Error: No code found after '.extern'/'.entry' marking. Line %d\n", lineNum);
         break;
     }
 

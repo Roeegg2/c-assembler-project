@@ -49,14 +49,14 @@ int main(int argc, char** argv){
         if (status == TRUE)
             invoke_secondpass(&dcImage, &icImage, labelTable, head, argv[i], labelCount, dc, ic, &fpf);
 
-        /* printf("ext/ent list:\n");
+        printf("-------- ext/ent list: --------\n");
         PRINTEXTENT(head);
-        printf("instructions words:\n");
+        printf("-------- instructions words: --------\n");
         PRINTWORDS(icImage, ic, 0);
-        printf("data words:\n");
+        printf("-------- data words: --------\n");
         PRINTWORDS(dcImage, dc, ic);
-        printf("label table:\n");
-        PRINTLABEL(labelTable, labelCount); */
+        printf("-------- label table: --------\n");
+        PRINTLABEL(labelTable, labelCount);
 
         /* close files */
         /**

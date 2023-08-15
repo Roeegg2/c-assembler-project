@@ -50,8 +50,10 @@ int invoke_preassembler(char* filename){
 int write_line(FILE** amFile, macro* head, char* token, char* writeLine){
     macro* temp;
 
-    if ((temp = find_macro(head, token)) != NULL)
-        fprintf(*amFile, "%s", temp->code);
+    if ((temp = find_macro(head, token)) != NULL){
+        writeLine += strlen(token);
+        fprintf(*amFile, "%s%s", temp->code, writeLine);
+    }
     else
         fprintf(*amFile, "%s", writeLine);
     
@@ -85,7 +87,7 @@ int get_macro_code(FILE** asFile, macro* head, char* originalLine, char* line, i
     
     token = strtok(NULL, DELIMITERS);
     if (token != NULL)
-        error_handler(Extratanatious_Text_After_Macro_Declaration, *lineNum);
+        pa_error_handler(Extratanatious_Text_After_Macro_Declaration, *lineNum);
 
     return TRUE;
 }
@@ -119,6 +121,9 @@ macro* add_macro_node(char* macroName, macro* head){
 }
 
 macro* find_macro(macro* head, char* token){
+    if (LAST_CHARACTER(token) == ':')
+        LAST_CHARACTER(token) = '\0';
+
     while (head != NULL){
         if (strcmp(head->name, token) == 0)
             return head;
@@ -130,34 +135,36 @@ macro* find_macro(macro* head, char* token){
 
 int check_for_macro_erros(char** token, macro* head, int lineNum){
     if (find_macro(head, *token) != NULL)
-        error_handler(Macro_Already_Exists, lineNum);
+        pa_error_handler(Macro_Already_Exists, lineNum);
+
+    legal_label_macro_name(*token, lineNum, &pa_error_handler);
 
     (*token) = strtok(NULL, DELIMITERS);
     if (*token != NULL)
-        error_handler(Extratanatious_Text_After_Macro_Declaration, lineNum);
-
-    /* if (is_operation() != FALSE || is_guidanceshit() != FALSE || is_guidancelabelshit() != FALSE)
-        *status = error_handler(Macro_Name_Is_Saved_Word, lineNum);  macro name is a saved word, which isnt right */
+        pa_error_handler(Extratanatious_Text_After_Macro_Declaration, lineNum);
 
     return TRUE;
 }
 
-int error_handler(int errorCode, int lineNum){
+int pa_error_handler(int errorCode, int lineNum){
     switch (errorCode){
+        case Illegal_Name_First_Char:
+            printf("Error: Illegal macro name. First character must be a letter. Line %d\n", lineNum);
+            break;
+        case Illegal_Name_Illegal_Chars:
+            printf("Error: Illegal macro name. Label name can only contain letters and numbers. Line %d\n", lineNum);
+            break;
+        case Illegal_Name_Saved_Word:
+            printf("Error: Illegal macro name. Label cant be named a saved word Line %d\n", lineNum);
+            break;  
         case Macro_Already_Exists:
             printf("Error: Macro already exists. Line %d\n", lineNum);
             break;
         case Extratanatious_Text_After_Macro_Declaration:
             printf("Error: Extratanatious text after macro declaration. Line %d\n", lineNum);
             break;
-        case Macro_Name_Is_Saved_Word:
-            printf("Error: Macro name is a saved word. Line %d\n", lineNum);
-            break;
         case Line_Too_Long:
             printf("Error: Line exceeds max length. Line %d\n", lineNum);
-            break;
-        default:
-            printf("Error: Unknown error. Line %d\n", lineNum);
             break;
     }
 
@@ -165,12 +172,25 @@ int error_handler(int errorCode, int lineNum){
     return pa_status;
 }
 
+int legal_label_macro_name(char* name, int lineNum, int(*error_handler)(int, int)){
+    if (is_extent_instruction(name) != FALSE || is_operation(name) != -1 || is_datastring_instruction(name) != FALSE)
+        return error_handler(Illegal_Name_Saved_Word, lineNum);
+    
+    if (!(65 <= *name && *name <= 90) && !(97 <= *name && *name <= 122))
+        return error_handler(Illegal_Name_First_Char, lineNum);
+
+    if (strspn(name, "012345678abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") != strlen(name))
+        return error_handler(Illegal_Name_Illegal_Chars, lineNum);
+    
+    return TRUE;
+}
+
 /* int check_line_too_long(FILE** sourceFile, int* status, int lineNum){
     char extraChar;
 
     extraChar = fgetc(*sourceFile);
     if (extraChar != EOF)
-        *status = error_handler(Line_Too_Long, lineNum);
+        *status = pa_error_handler(Line_Too_Long, lineNum);
     
     return TRUE;
 } */

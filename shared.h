@@ -21,6 +21,8 @@
 #define _INSTRUCTION 6
 #define _NONE 5
 
+enum SharedErrors {Illegal_Name_First_Char, Illegal_Name_Illegal_Chars, Illegal_Name_Saved_Word};
+
 typedef struct label{
     char labelName[MAX_LABEL_LENGTH];
     int line;
@@ -43,4 +45,9 @@ label* find_label(label* labelTable, char* labelName, int labelCount);
 extentlabel* find_extent_label(extentlabel* head, char* labelName);
 int convert_to_binary(char binary[], int number, int size);
 
+int legal_label_macro_name(char* name, int lineNum, int(*error_handler)(int, int));
+
+int is_operation(char* opname);
+int is_datastring_instruction(char* token);
+int is_extent_instruction(char* token);
 #endif

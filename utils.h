@@ -11,6 +11,8 @@
 #define CHECK_ENTERED_INVALID_FILE(ptr) if(ptr == NULL) {printf("Couldn't open a prompted file. (are you sure it has .as ending?) Moving to the next file...\n"); return FALSE;}
 #define CHECK_FILE_STATUS(ptr) if(ptr == NULL) {printf("Program couldn't open a file.\nTerminating program...\n"); exit(1);}
 
+#define LAST_CHARACTER(string) *(string+strlen(string)-1)
+
 FILE* open_file(char* filename, char* ending, char* mode);
 int read_input_file(FILE** sourceFile, char* filename, char ending[], char line[], int* lineNum);
 int add_to_counterArray(char ***counterArray, int *counter, char *toAdd);

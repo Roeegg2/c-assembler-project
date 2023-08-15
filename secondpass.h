@@ -13,4 +13,6 @@ int print_extern(extentlabel head, FILE* extFile);
 char binary_to_base64(char* binary, char* base64Table, int start);
 int sp_error_handler(int errorCode, int lineNum);
 
+int funcc(FILE** filePtr, char* filename, char* extention, int* flag);
+
 int update_datalabels_addr(label* labelTable, int labelCount, int ic);

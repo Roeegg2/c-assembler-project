@@ -50,7 +50,6 @@ int map_labels(char*** icImage, label* labelTable, extentlabel* head, int ic, in
                 sp_error_handler(Unknown_Label, 999);  need to change lineNum here  */
         }
     }
-
     return TRUE;
 }
 
@@ -77,28 +76,39 @@ int write_ob_file(char** icArray, char** dcArray, char* filename, char* base64Ta
     return TRUE;
 }
 
+int funcc(FILE** filePtr, char* filename, char* extention, int* flag){
+    if (*flag == FALSE){
+        *filePtr = open_file(filename, extention, "w");
+        CHECK_FILE_STATUS(filePtr)
+        *flag = TRUE;
+    }
+}
+
 int write_extent_file(label* labelTable, extentlabel* head, char* filename, int labelCount){
     FILE* extFile; 
     FILE* entFile;
+    int extFlag, entFlag;
 
-    extFile = open_file(filename, ".ext", "w");
-    entFile = open_file(filename, ".ent", "w");
-    
-    CHECK_FILE_STATUS(extFile)
-    CHECK_FILE_STATUS(entFile)
-
+    extFlag = entFlag = FALSE;
+    /* is opening and closing like this okay*/
     while (head != NULL){
-        if (head->type == _EXTERN)
+        if (head->type == _EXTERN && head->address.count > 0){
+            funcc(&extFile, filename, ".ext", &extFlag);
             print_extern(*head, extFile);
-        else
+        }
+        else if (head->type == _ENTRY){
+            funcc(&entFile, filename, ".ent" , &entFlag);
             fprintf(entFile, "%s\t%d\n", head->labelName, head->address.addr[0]);
+        }
 
         head = head->next;
     }
     
-    fclose(extFile);
-    fclose(entFile);
-    
+    if (extFlag == TRUE)
+        fclose(extFile);
+    if (entFlag == TRUE)
+        fclose(entFile);
+
     return TRUE;
 }
 

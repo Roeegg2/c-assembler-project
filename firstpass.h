@@ -25,17 +25,15 @@
 #define BOTH_ARE_NOT_NULL(sourceStatus, destStatus) (sourceStatus == 1 && destStatus == 1)
 #define BOTH_ARE_REGISTER(op) (op->destOperand->addrMode == Register && op->sourceOperand->addrMode == Register)
 
-#define LAST_CHARACTER(string) *(string+strlen(string)-1)
 #define CHAR_TO_INT(c) (c - '0')
 
 enum Opcodes {Mov = 0, Cmp, Add, Sub, Not, Clr, Lea, Inc, Dec, Jmp, Bne, Red, Prn, Jsr, Rts, Stop};
 enum AddressingModes {No_Operand = 0, Immediate = 1, Direct = 3, Register = 5};
-enum FirstpassErrors {Unknown_Command = 0, Comma_Error, Extra_Comma, Double_Comma, Missing_Comma, 
+enum FirstpassErrors {Unknown_Command = 3, Comma_Error, Extra_Comma, Double_Comma, Missing_Comma, 
     Parameter_Not_Whole_Number, Parameter_Out_Of_Bounds, Invalid_Source_Sequence, Invalid_Dest_Sequence, 
-    Illegal_String_Declaration, Label_Already_Defined, Illegal_Comma_Name_First_Char, 
-    Illegal_Comma_Name_Illegal_Chars, Illegal_Comma_Name_Saved_Word, Extent_Label_Already_Defined_Differently, 
+    Illegal_String_Declaration, Label_Already_Defined, Extent_Label_Already_Defined_Differently, 
     Label_Name_Too_Long, Undefined_Register, Blank_Label_Declaration, Missing_Dest_Operand, 
-    Missing_Source_Operand, Too_Many_Operands};
+    Missing_Source_Operand, Too_Many_Operands, Blank_Extent_Marking};
 enum Warnings {Label_Points_At_ExternEntry = 0, Extent_Label_Already_Defined_Similarly};
 
 typedef struct operand{
@@ -82,9 +80,6 @@ int get_comma_param_cnt(char* line, int lineNum);
 int check_param_sequence(char sequenceArr[16][4], operand* operandd, int opcode, int lineNum, int sourceOrDest);
 char* get_param_pointer(char* orgLineToken, char toFind);
 
-int is_operation(char* opname);
-int is_datastring_instruction(char* token);
-int is_extent_instruction(char* token);
 int call_datastring_analyzer(char** lineToken, int** params, char* orgLineToken, int lineNum, int commandCode);
 
 int is_label(char** token, char* labelName, char* line, int lineNum);

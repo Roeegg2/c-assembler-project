@@ -33,7 +33,7 @@ enum FirstpassErrors {Unknown_Command = 3, Comma_Error, Extra_Comma, Double_Comm
     Parameter_Not_Whole_Number, Parameter_Out_Of_Bounds, Invalid_Source_Sequence, Invalid_Dest_Sequence, 
     Illegal_String_Declaration, Label_Already_Defined, Extent_Label_Already_Defined_Differently, 
     Label_Name_Too_Long, Undefined_Register, Blank_Label_Declaration, Missing_Dest_Operand, 
-    Missing_Source_Operand, Too_Many_Operands, Blank_Extent_Marking};
+    Missing_Source_Operand, Too_Many_Operands, Blank_Extent_Marking, Illegal_String_Char, Blank_DataString_Instruction};
 enum Warnings {Label_Points_At_ExternEntry = 0, Extent_Label_Already_Defined_Similarly};
 
 typedef struct operand{

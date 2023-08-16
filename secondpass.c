@@ -38,7 +38,8 @@ int map_labels(char*** icImage, label* labelTable, extentlabel* head, int ic, in
 
             if (foo != NULL){
                 (*icImage)[i] = (char*)realloc((*icImage)[i], sizeof(char) * 13);
-                    
+                CHECK_ALLOCATION_ERROR((*icImage)[i]);
+
                 convert_to_binary((*icImage)[i], foo->address, 10);
                 (*icImage)[i][10] = '1';  /* adding ARE */
                 (*icImage)[i][11] = '0';
@@ -82,6 +83,8 @@ int funcc(FILE** filePtr, char* filename, char* extention, int* flag){
         CHECK_FILE_STATUS(filePtr)
         *flag = TRUE;
     }
+
+    return TRUE;
 }
 
 int write_extent_file(label* labelTable, extentlabel* head, char* filename, int labelCount){
@@ -146,6 +149,8 @@ int get_data_entry(label* labelTable, extentlabel* head, int labelCount, int ic)
     foo = find_label(labelTable, head->labelName, labelCount);
     if (foo != NULL){
         head->address.addr = (int*)malloc(sizeof(int));
+        CHECK_ALLOCATION_ERROR((head->address.addr ))
+
         head->address.addr[0] = foo->address;
         return TRUE;
     }
@@ -162,6 +167,8 @@ int get_data_extern(char*** icImage, extentlabel* head, int ic){
         if (strcmp(head->labelName, (*icImage)[i]) == 0){
             head->address.count++;
             head->address.addr = (int*)realloc(head->address.addr, sizeof(int) * (head->address.count));
+            CHECK_ALLOCATION_ERROR(head->address.addr);
+
             head->address.addr[head->address.count-1] = i+100;  /* not sure this is the correct address i should be assigning */ 
             strcpy((*icImage)[i], "000000000001");
         }
@@ -197,13 +204,13 @@ int update_datalabels_addr(label* labelTable, int labelCount, int ic){
 int sp_error_handler(int errorCode, int lineNum){
     switch (errorCode){
         case Extern_Declared:
-            printf("Error: label marked 'extern' but is also declared in code. Line %d\n", lineNum);
+            printf("Error: label marked 'extern' but is also declared in code. Line: %d\n", lineNum);
             break;
         case Entry_Not_Declared:
-            printf("Error: label marked 'entry' but is not declared in code. Line %d\n", lineNum);
+            printf("Error: label marked 'entry' but is not declared in code. Line: %d\n", lineNum);
             break;
         case Unknown_Label:
-            printf("Error: unknown label is referenced in code. Line %d\n", lineNum);
+            printf("Error: unknown label is referenced in code. Line: %d\n", lineNum);
             break;
     }
 

@@ -20,7 +20,8 @@ int invoke_preassembler(char* filename){
     CHECK_FILE_STATUS(amFile);
     
     while (read_input_file(&asFile, filename, ".as", originalLine, &lineNum) == TRUE){
-/*         check_line_too_long(&asFile, &status, lineNum); */
+        check_line_too_long(originalLine, lineNum);
+
         strcpy(line, originalLine);
         token = strtok(line, DELIMITERS);
 
@@ -80,6 +81,7 @@ int get_macro_code(FILE** asFile, macro* head, char* originalLine, char* line, i
     while (strcmp(token, "endmcro") != 0){
         head->code = (char*)realloc(head->code, (strlen(head->code) + strlen(originalLine) + 1) * sizeof(char));
         CHECK_ALLOCATION_ERROR(head->code);
+        
         strcat(head->code, originalLine);
 
         func(asFile, originalLine, line, &token, lineNum);
@@ -149,22 +151,22 @@ int check_for_macro_erros(char** token, macro* head, int lineNum){
 int pa_error_handler(int errorCode, int lineNum){
     switch (errorCode){
         case Illegal_Name_First_Char:
-            printf("Error: Illegal macro name. First character must be a letter. Line %d\n", lineNum);
+            printf("Error: Illegal macro name. First character must be a letter. Line: %d\n", lineNum);
             break;
         case Illegal_Name_Illegal_Chars:
-            printf("Error: Illegal macro name. Label name can only contain letters and numbers. Line %d\n", lineNum);
+            printf("Error: Illegal macro name. Label name can only contain letters and numbers. Line: %d\n", lineNum);
             break;
         case Illegal_Name_Saved_Word:
-            printf("Error: Illegal macro name. Label cant be named a saved word Line %d\n", lineNum);
+            printf("Error: Illegal macro name. Label cant be named a saved word. Line: %d\n", lineNum);
             break;  
         case Macro_Already_Exists:
-            printf("Error: Macro already exists. Line %d\n", lineNum);
+            printf("Error: Macro already exists. Line: %d\n", lineNum);
             break;
         case Extratanatious_Text_After_Macro_Declaration:
-            printf("Error: Extratanatious text after macro declaration. Line %d\n", lineNum);
+            printf("Error: Extratanatious text after macro declaration. Line: %d\n", lineNum);
             break;
         case Line_Too_Long:
-            printf("Error: Line exceeds max length. Line %d\n", lineNum);
+            printf("Error: Line: exceeds max length. Line: %d\n", lineNum);
             break;
     }
 
@@ -185,12 +187,17 @@ int legal_label_macro_name(char* name, int lineNum, int(*error_handler)(int, int
     return TRUE;
 }
 
-/* int check_line_too_long(FILE** sourceFile, int* status, int lineNum){
-    char extraChar;
+int check_line_too_long(char* line, int lineNum){
+    int i;
 
-    extraChar = fgetc(*sourceFile);
-    if (extraChar != EOF)
-        *status = pa_error_handler(Line_Too_Long, lineNum);
-    
-    return TRUE;
-} */
+    /*still a problem here when in the last line of the file you dont hit enter*/
+    for (i = 0; i < strlen(line)-1; i++)
+        if (line[i] == '\n' || line[i] == '\0')
+            return TRUE;
+
+    if (line[i] == '\n')
+        return TRUE;
+
+    pa_error_handler(Line_Too_Long, lineNum);
+    return FALSE;
+}

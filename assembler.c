@@ -43,20 +43,21 @@ int main(int argc, char** argv){
         labelTable = (label* )malloc(sizeof(label));
         head = NULL;
 
+        dc = ic = 0;
         status = invoke_preassembler(argv[i]);
         if (status == TRUE)
             status = invoke_firstpass(&dcImage, &icImage, &labelTable, &head, argv[i], &dc, &ic, &labelCount);
         if (status == TRUE)
             invoke_secondpass(&dcImage, &icImage, labelTable, head, argv[i], labelCount, dc, ic, &fpf);
 
-        printf("-------- ext/ent list: --------\n");
+/*         printf("-------- ext/ent list: --------\n");
         PRINTEXTENT(head);
         printf("-------- instructions words: --------\n");
         PRINTWORDS(icImage, ic, 0);
         printf("-------- data words: --------\n");
         PRINTWORDS(dcImage, dc, ic);
         printf("-------- label table: --------\n");
-        PRINTLABEL(labelTable, labelCount);
+        PRINTLABEL(labelTable, labelCount); */
 
         /* close files */
         /**

@@ -23,6 +23,6 @@ int get_macro_code(FILE** asFile, macro* head, char* originalLine, char* line, i
 int write_line(FILE** amFile, macro* head, char* token, char* writeLine);
 int invoke_preassembler(char* filename);
 int pa_error_handler(int errorCode, int lineNum);
-/* int check_line_too_long(FILE** sourceFile, int* status, int lineNum); */
+int check_line_too_long(char* line, int lineNum);
 
 #endif /*PREASSEMBLER_H*/

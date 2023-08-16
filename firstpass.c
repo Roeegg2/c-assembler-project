@@ -60,6 +60,7 @@ int add_one(char binary[]){
 
 int add_label(label **labelTable, char *labelName, int *labelCount, int counterValue, int isData, int lineNum){
     (*labelTable) = (label *)realloc((*labelTable), sizeof(label) * ((*labelCount) + 1));
+    CHECK_ALLOCATION_ERROR((*labelTable))
 
     if (find_label(*labelTable, labelName, *labelCount) != NULL)
         return fp_error_handler(Label_Already_Defined, lineNum);
@@ -144,10 +145,16 @@ int analyze_string(int** stringConverted, char* stringLine, int lineNum){
 
     for (i = 0; i < strlen(stringLine); i++){
         (*stringConverted) = (int*)realloc((*stringConverted), sizeof(int) * (i + 1));
+        CHECK_ALLOCATION_ERROR((*stringConverted))
+
         (*stringConverted)[i] = (int)stringLine[i];
+        if ((*stringConverted)[i] < 32 || (*stringConverted)[i] > 126)
+            return fp_error_handler(Illegal_String_Char, lineNum);
     }
     /*adding the null terminator word */
     (*stringConverted) = (int*)realloc((*stringConverted), sizeof(int) * (i + 1));
+    CHECK_ALLOCATION_ERROR((*stringConverted))
+
     (*stringConverted)[i] = 0;
 
     return i+1;
@@ -163,6 +170,8 @@ int analyze_data(char** token, int** params, int lineNum){
         if (**token != ','){
             if (strspn((*token), "-+0123456789") == strlen((*token))){
                 (*params) = (int*)realloc((*params), sizeof(int) * (i + 1));
+                CHECK_ALLOCATION_ERROR((*params))
+
                 (*params)[i] = (int)strtol(*token, &endptr, 10);
                 if ((*params)[i] < -2048 || (*params)[i] > 2047)
                     return fp_error_handler(Parameter_Out_Of_Bounds, lineNum);
@@ -205,6 +214,7 @@ int add_extent_label(extentlabel** head, char** token, int type, int lineNum){
     extentlabel* newNode;
     extentlabel* temp;
     newNode = (extentlabel *)calloc(1, sizeof(extentlabel));
+    CHECK_ALLOCATION_ERROR((newNode))
 
     /*checking and making sure that the label hasnt been declared yet. Maybe move to a differnt function?*/
     temp = find_extent_label(*head, *token);
@@ -263,21 +273,21 @@ label* find_label(label *labelTable, char *labelName, int labelCount){
 /* adds the operand words to the operation array */
 int add_operand_words(char ***icImage, label **labelTable, operation *op, int *ic, int labelCount){
     int sourceVal, destVal;
-    int sourcefp_status, destfp_status;
+    int source_status, dest_status;
     char binary[31];
 
-    sourcefp_status = get_type_val(labelTable, op->sourceOperand, &sourceVal, labelCount);
-    destfp_status = get_type_val(labelTable, op->destOperand, &destVal, labelCount);
+    source_status = get_type_val(labelTable, op->sourceOperand, &sourceVal, labelCount);
+    dest_status = get_type_val(labelTable, op->destOperand, &destVal, labelCount);
 
     if (BOTH_ARE_REGISTER(op)){
         get_register_word(binary, sourceVal, destVal);
         add_to_counterArray(icImage, ic, binary);
     }
     else{
-        if (get_isolated_word(op->sourceOperand, binary, sourceVal, sourcefp_status) == TRUE)
+        if (get_isolated_word(op->sourceOperand, binary, sourceVal, source_status) == TRUE)
             add_to_counterArray(icImage, ic, binary);
 
-        if (get_isolated_word(op->destOperand, binary, destVal, destfp_status) == TRUE)
+        if (get_isolated_word(op->destOperand, binary, destVal, dest_status) == TRUE)
             add_to_counterArray(icImage, ic, binary);
     }
 
@@ -304,9 +314,10 @@ int get_operand_value(operand *op, char *token, int lineNum){
         foo[0] = token[3];
         if (strspn(foo, "0123456789") == 1)
             return fp_error_handler(Undefined_Register, lineNum);
+
         foo[0] = token[2];
         if (strspn(foo, "01234567") == 1){
-            op->val.regNum = strtol(token, &endptr, 10);
+            op->val.regNum = strtol(foo, &endptr, 10);
             op->addrMode = Register;
         }
         else
@@ -443,8 +454,11 @@ int is_datastring_instruction(char* token){
 
 int call_datastring_analyzer(char** lineToken, int** params, char* orgLineToken, int lineNum, int commandCode){    
     *params = (int*)calloc(1, sizeof(int));   /* move this to a different function */
-    
+    CHECK_ALLOCATION_ERROR((*params))
+
     *lineToken = strtok(NULL, PARAM_DELIMITERS);
+    if (*lineToken == NULL)
+        return fp_error_handler(Blank_DataString_Instruction, lineNum);
 
     if (commandCode == _DATA){
         analyze_data(lineToken, params, lineNum);
@@ -584,7 +598,7 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
     int commandCode, lineNum, isLabel, counterVal, isData;
 
     fp_status = TRUE;  /* stopped here. not sure i should use global variable */
-    *dc = *ic = *labelCount = lineNum = 0;
+    *labelCount = lineNum = 0;
     /* move this to assembler program, maybe make this global variable */
     set_sequence_array_source(sourceSequenceArray);
     set_sequence_array_dest(destSequenceArray);
@@ -619,6 +633,8 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
                 add_label(labelTable, labelName, labelCount, counterVal, isData, lineNum);  /* remove ic and dc, make them global variables */
               /* NOTE: if label there is not command, and then counter isnt pointing anywhere valid, what do we do? */
         }
+
+        CHECK_BUFFER_OVERFLOW((*dc), (*ic))
     }
 
     fclose(amFile);
@@ -655,10 +671,10 @@ int check_param_sequence(char sequenceArr[16][4], operand* operandd, int opcode,
 int fp_warning_handler(int warningCode, int lineNum){
     switch (warningCode){
     case Label_Points_At_ExternEntry:
-        printf("Warning: Label points at .extern/.entry. Assembler will ignore the label. Line %d\n", lineNum);
+        printf("Warning: Label points at .extern/.entry. Assembler will ignore the label. Line: %d\n", lineNum);
         break;
     case Extent_Label_Already_Defined_Similarly:
-        printf("Warning: Extent label already defined with same type. Line %d\n", lineNum);
+        printf("Warning: Extent label already defined with same type. Line: %d\n", lineNum);
         break;
     }
 
@@ -668,13 +684,13 @@ int fp_warning_handler(int warningCode, int lineNum){
 int fp_error_handler(int errorCode, int lineNum){
     switch (errorCode){  
     case Illegal_Name_First_Char:
-        printf("Error: Illegal label name. First character must be a letter. Line %d\n", lineNum);
+        printf("Error: Illegal label name. First character must be a letter. Line: %d\n", lineNum);
         break;
     case Illegal_Name_Illegal_Chars:
-        printf("Error: Illegal label name. Label name can only contain letters and numbers. Line %d\n", lineNum);
+        printf("Error: Illegal label name. Label name can only contain letters and numbers. Line: %d\n", lineNum);
         break;
     case Illegal_Name_Saved_Word:
-        printf("Error: Illegal label name. Label cant be named a saved word Line %d\n", lineNum);
+        printf("Error: Illegal label name. Label cant be named a saved word Line: %d\n", lineNum);
         break;  
     case Unknown_Command:
         printf("Error: Unknown command in line %d\n", lineNum);
@@ -689,49 +705,55 @@ int fp_error_handler(int errorCode, int lineNum){
         printf("Error: Double comma in line %d\n", lineNum);
         break;
     case Missing_Comma:
-        printf("Error: Missing comma. Line %d\n", lineNum);
+        printf("Error: Missing comma. Line: %d\n", lineNum);
         break;
     case Parameter_Not_Whole_Number:
-        printf("Error: Non whole numerical value found. Line %d\n", lineNum);
+        printf("Error: Non whole numerical value found. Line: %d\n", lineNum);
         break;
     case Parameter_Out_Of_Bounds:
-        printf("Error: Parameter out of bounds. Line %d\n", lineNum);
+        printf("Error: Numerical parameter entered is out of bounds. Line: %d\n", lineNum);
         break;
     case Invalid_Source_Sequence:
-        printf("Error: Invalid source operand. Line %d\n", lineNum);
+        printf("Error: Invalid source operand. Line: %d\n", lineNum);
         break;
     case Invalid_Dest_Sequence:
-        printf("Error: Invalid destination operand. Line %d\n", lineNum);
+        printf("Error: Invalid destination operand. Line: %d\n", lineNum);
         break;
     case Missing_Dest_Operand:
-        printf("Error: Missing destination operand. Line %d\n", lineNum);
+        printf("Error: Missing destination operand. Line: %d\n", lineNum);
         break;
     case Missing_Source_Operand:
-        printf("Error: Missing source operand. Line %d\n", lineNum);
+        printf("Error: Missing source operand. Line: %d\n", lineNum);
         break;
     case Too_Many_Operands:
-        printf("Error: Too many operands passed to operation. Line %d\n", lineNum);
+        printf("Error: Too many operands passed to operation. Line: %d\n", lineNum);
         break;
     case Illegal_String_Declaration:
-        printf("Error: Illegal string declaration (are you missing \"\"?). Line %d\n", lineNum);
+        printf("Error: Illegal string declaration (are you missing \"\"?). Line: %d\n", lineNum);
         break;
     case Label_Already_Defined:
-        printf("Error: Label already defined beforehand. Line %d\n", lineNum);
+        printf("Error: Label already defined beforehand. Line: %d\n", lineNum);
         break;
     case Extent_Label_Already_Defined_Differently:
-        printf("Error: Extent label already defined a different type. Line %d\n", lineNum);
+        printf("Error: Extent label already defined a different type. Line: %d\n", lineNum);
         break;
     case Label_Name_Too_Long:
-        printf("Error: Label name exceeds max length. Line %d\n", lineNum);
+        printf("Error: Label name exceeds max length. Line: %d\n", lineNum);
         break;
     case Undefined_Register:
-        printf("Error: Undefined register. Line %d\n", lineNum);
+        printf("Error: Undefined register. Line: %d\n", lineNum);
         break;
     case Blank_Label_Declaration:
-        printf("Error: No code found after label declaration. Line %d\n", lineNum);
+        printf("Error: No code found after label declaration. Line: %d\n", lineNum);
         break;
     case Blank_Extent_Marking:
-        printf("Error: No code found after '.extern'/'.entry' marking. Line %d\n", lineNum);
+        printf("Error: Empty '.extern'/'.entry' marking. Line: %d\n", lineNum);
+        break;
+    case Illegal_String_Char:
+    	printf("Error: Illegal character entered in string. Line: %d\n", lineNum);
+    	break;
+    case Blank_DataString_Instruction:
+        printf("Error: Empty '.data'/'string' instruction. Line: %d\n", lineNum);
         break;
     }
 

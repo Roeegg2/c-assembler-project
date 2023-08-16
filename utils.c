@@ -56,7 +56,8 @@ int free_counter_array(char*** counterImage, int counter){
     int i;
 
     for (i = 0; i < counter; i++)
-        free((*counterImage)[i]);
+        if ((*counterImage)[i] != NULL)
+            free((*counterImage)[i]);
     
     free((*counterImage));
     

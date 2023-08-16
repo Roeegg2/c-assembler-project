@@ -1,0 +1,41 @@
+secondpass planning.
+
+what should secondpass contain?
+
+1. mapping and writing ext and ent files
+2. replacing each of the unknown label addresses with its address/ reporting error if not found
+
+
+match_extent_labeltable(){
+	while (head != NULL)
+		if (head.type is _ent)
+			if (head->labelName is the same as a certain label in labelTable)
+				labelTable[i]->type = head->type
+			else
+				error_handler() => .entry/.extern instruction for 
+		else
+			add label to labelTable, with address of 000000000001
+}
+
+write_to_ob_file(){
+	// go over all of array, write it to file. if encountered label, find it in labelTable and replace its name with its address
+	for (each element in array (could be iocImage could be dcImage))
+		if (first character is not '0' or '1')
+			address = find_label(...)
+			if (address == 0)
+				error
+			else
+				array[i] = address
+		fprintf(...);
+}
+
+write_to_extent_file(){
+	while (head != NULL)
+		if (head type is _EXT)
+			loop over the ic array and write all of the labels mentions
+		else
+			loop over labelTable
+				if (label is .ent)
+}
+
+go over the head list and map each label 

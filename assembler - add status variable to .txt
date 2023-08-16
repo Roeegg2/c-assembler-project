@@ -1,0 +1,39 @@
+assembler - add status variable to be set when error encountered and not write to any file
+
+preassembler - set status variable and make that it wont write to file if theres error (add everything to an array and then write)
+
+firstpass - .entry and .extern multiple files declaration
+
+secondpass - convert to base64, 1.
+
+errors - ent/ext errors with labelTable, 
+
+
+---------------------------------------------------
+; file ps.as
+
+.entry LENGTH
+.extern W
+MAIN:   mov @r3 ,LENGTH
+LOOP:   jmp L1
+        prn -5
+        bne W
+        sub @r1, @r4
+        bne L3
+L1:     inc K
+.entry LOOP
+;another note
+        jmp W
+END:    stop
+
+STR:    .string "abcdef"
+LENGTH: .data 6,-9,15
+K:      .data 22
+.extern L3
+
+
+
+
+note to self:
+
+additionally to commit message, go over code and try to make it nicer and more modular and tidy and less repetetive and good

@@ -6,9 +6,9 @@ take care of line 999 error
 blank label
 blank .data .string with comma 
 blank operand with comma
-macro handling
 
 
 make lineNum global
 make header documentation less formal (remove @ and capital letters) 10mins 20mins
 add in functions documentation 20mins 30mins
+move structs to different files (like roy asked to)

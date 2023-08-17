@@ -20,7 +20,7 @@ int invoke_preassembler(char* filename){
     CHECK_FILE_STATUS(amFile);
     
     while (read_input_file(&asFile, filename, ".as", originalLine, &lineNum) == TRUE){
-        check_line_too_long(originalLine, lineNum);
+        /* check_line_too_long(originalLine, lineNum); */
 
         strcpy(line, originalLine);
         token = strtok(line, DELIMITERS);
@@ -30,7 +30,7 @@ int invoke_preassembler(char* filename){
                 token = strtok(NULL, DELIMITERS);
                 strcpy(macroName, token);
 
-                check_for_macro_erros(&token, head, lineNum);
+                check_for_macro_errors(&token, head, lineNum);
                 head = add_macro_node(macroName, head);
                 get_macro_code(&asFile, head, originalLine, line, &lineNum);
             }
@@ -52,11 +52,10 @@ int invoke_preassembler(char* filename){
 
 int write_line(FILE** amFile, macro* head, char* token, char* writeLine){
     macro* temp;
-
-    if ((temp = find_macro(head, token)) != NULL){
-        writeLine += strlen(token);
-        fprintf(*amFile, "%s%s", temp->code, writeLine);
-    }
+    
+    temp = find_macro(head, token);
+    if (temp != NULL)
+        fprintf(*amFile, "%s", temp->code);
     else
         fprintf(*amFile, "%s", writeLine);
     
@@ -125,9 +124,6 @@ macro* add_macro_node(char* macroName, macro* head){
 }
 
 macro* find_macro(macro* head, char* token){
-    if (LAST_CHARACTER(token) == ':')
-        LAST_CHARACTER(token) = '\0';
-
     while (head != NULL){
         if (strcmp(head->name, token) == 0)
             return head;
@@ -137,7 +133,7 @@ macro* find_macro(macro* head, char* token){
     return NULL;
 }
 
-int check_for_macro_erros(char** token, macro* head, int lineNum){
+int check_for_macro_errors(char** token, macro* head, int lineNum){
     if (find_macro(head, *token) != NULL)
         pa_error_handler(Macro_Already_Exists, lineNum);
 

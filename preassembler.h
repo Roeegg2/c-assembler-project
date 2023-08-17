@@ -94,7 +94,7 @@ macro* find_macro(macro* head, char* token);
  * @param lineNum The current line number.
  * @return Returns TRUE if no errors are found.
  */
-int check_for_macro_erros(char** token, macro* head, int lineNum);
+int check_for_macro_errors(char** token, macro* head, int lineNum);
 
 /**
  * Handles preassembler error codes and displays corresponding error messages.

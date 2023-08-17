@@ -2,6 +2,11 @@
 #include "shared.h"
 #include "utils.h"
 
+/* The following function recieves 3 paramteres: 'binary', 'number', 'size'. It analyzes 'number' and writes its binary representation into 'binary'.
+ * binary - the string to write the binary representation into 
+ * number - the number in which the function converts
+ * size - the amount of bits to write into binary (for example '1' can be written both as 0001 and as 00000000000000001)
+*/
 int convert_to_binary(char binary[], int number, int size){
     int isNegative, i;
 
@@ -26,6 +31,11 @@ int convert_to_binary(char binary[], int number, int size){
     return 0;
 }
 
+/*GO OVER*/
+/*HFThe following function recieves a string 'binary' repressenting a positive number, and the function flips its bits (0 turns into 1 and 1 into 0) so that 
+ * 'binary' represents 'number's' negative counterpart. (this is step 1 of repressenting a negative number in binary using 2's complement method)
+ * binary - a string repressenting the binary represntation of a positive whole number  
+*/
 int flip_negative(char binary[]){
     int i;
     
@@ -35,6 +45,11 @@ int flip_negative(char binary[]){
     return TRUE;
 }
 
+/*GO OVER*/
+/*HFThe following funciton recieves a string 'binary' repressenting a 'fllipped-bit' positive number in binary. The function adds 1 to 'binary', so that 'binary' represents
+ * some postive number's negative counterpart (this is step 2 of re[ressemtomg a negative numebr in binary using 2's complement)
+ * binary - a string repressenting 
+ */
 int add_one(char binary[]){
     int carry, i;
     carry = 1;
@@ -53,6 +68,15 @@ int add_one(char binary[]){
     return TRUE;
 }
 
+/*GO OVER*/
+/*The following functions purpose is to add a new label to labelTable. It returns TRUE if successfull, if it encounteres any errors it returns ERROR
+ * labelTable - a pointer to the labelTable array
+ * labelName - the name of the label to add
+ * labelCount - the current amount of labels in labelTable
+ * counterValue - the value of the counter used to calculate the labels address (either ic or dc)
+ * isData - a flag used later on to analyze other things 
+ * // lineNum - the line number 
+*/
 int add_label(label **labelTable, char *labelName, int *labelCount, int counterValue, int isData, int lineNum){
     (*labelTable) = (label *)realloc((*labelTable), sizeof(label) * ((*labelCount) + 1));
     CHECK_ALLOCATION_ERROR((*labelTable))
@@ -69,12 +93,17 @@ int add_label(label **labelTable, char *labelName, int *labelCount, int counterV
     return TRUE;
 }
 
-/*IGNORE NOT SURE TO REMOVE THIS FUNCTION*/
+/* NOT SURE TO REMOVE THIS FUNCTION*/
 int add_are(char *binary, char *are){
     strcat(binary, "00");
     return 0;
 }
 
+/* The following function purpose is to add the first word of an operation into the icImage.
+ * icImage - a pointer to the icImage
+ * op - a pointer to the operation
+ * ic - a pointer to the ic counter.
+*/
 int add_first_op_word(char ***icImage, operation *op, int *ic){
     char binary[13]; /* 12 binary digits + 1 null terminator */
 
@@ -90,6 +119,11 @@ int add_first_op_word(char ***icImage, operation *op, int *ic){
     return 0;
 }
 
+/*GO OVER*/
+/* The following functions purpose is to check whether or not the command entered is an operation or not. If the command is indeed an operation, the function will return 
+ * its opcode. Otherwise, the function will return -1 (NOTE: the function returns -1 because 0 (FALSE) is the opcode of the 'mov' operation).
+ * opname - the name of the (maybe) operation.
+*/
 int is_operation(char *opname){
     if (strcmp(opname, "mov") == 0)
         return Mov;
@@ -127,6 +161,12 @@ int is_operation(char *opname){
     return -1;
 }
 
+/*GO OVER*/
+/*The following functions purpose is to extract the ASCII value of each char in the string, or return an error if found.
+ * params - a pointer to the 'params' array where the function will insert the ASCII values of each char
+ * stringLine - the string to analyze
+ * // lineNum -
+*/
 int analyze_string(int** params, char* stringLine, int lineNum){
     int i;
 
@@ -155,6 +195,12 @@ int analyze_string(int** params, char* stringLine, int lineNum){
     return i+1;
 }
 
+/*GO OVER*/
+/* The following functions purpose is to extract the value of each parameter and add it to the 'params' array, or return an error if found
+ * token - a pointer to the string representing the parameters entered to the '.data' instruction
+ * params - a pointer to the 'params' array where the function will insert the parameters values
+ * // lineNum
+*/
 int analyze_data(char** token, int** params, int lineNum){
     char* endptr;
     int i;
@@ -180,6 +226,13 @@ int analyze_data(char** token, int** params, int lineNum){
     return TRUE;
 }
 
+/*GO OVER*/
+/*HFThe following functions purpose is to convert into binary and add the parameter words of the .data/.string command
+ * dcImage - a pointer to the dcImage 
+ * params - the array containing the numerical values of each param/char
+ * dc - a pointer to the dc counter
+ * //lineNum 
+*/
 int add_datastring_word(char ***dcImage, int *params, int *dc, int paramCnt, int lineNum){
     int i;
     char binary[13];
@@ -192,6 +245,10 @@ int add_datastring_word(char ***dcImage, int *params, int *dc, int paramCnt, int
     return TRUE;
 }
 
+/*HFThis functions purpose is returning a pointer to the extentlabel node which matches the name entered. If such a node isnt found, the function will return NULL
+ * head - a pointer to the head of the extentlabel linked list
+ * labelName - the name of the label which we are looking for
+*/
 extentlabel* find_extent_label(extentlabel* head, char* labelName){
     while (head != NULL){
         if (strcmp(head->labelName, labelName) == 0)
@@ -202,6 +259,11 @@ extentlabel* find_extent_label(extentlabel* head, char* labelName){
     return NULL;
 }
 
+/* The following functions purpose is to add a new node to extentlabel linked list. It returns TRUE if successfull, if it encounteres any errors it returns ERROR
+ * head - a pointer to the head of the extentlabel linked list 
+ * token - a pointer to the name of the label which we wish to add
+ * //lineNum
+*/
 int add_extent_label(extentlabel** head, char** token, int type, int lineNum){
     extentlabel* newNode;
     extentlabel* temp;
@@ -236,6 +298,11 @@ int add_extent_label(extentlabel** head, char** token, int type, int lineNum){
     return TRUE;
 }
 
+/*This functions purpose is determening whether or not a string entered could be a valid label declaration (emphesizing the 'could be' since other errors may be discovered later in the code. This functions purpose is soley on the "tachbir" part.)
+ * token - a pointer to the string to check
+ * labelName - a string in which the labelName is saved (if it is indeed a valid label declaration)
+ * //lineNum - 
+*/
 int is_label(char **token, char *labelName, int lineNum){
     if (strlen(*token)-1 > MAX_LABEL_LENGTH)
         return fp_error_handler(Label_Name_Too_Long, lineNum);
@@ -253,6 +320,11 @@ int is_label(char **token, char *labelName, int lineNum){
     return legal_label_macro_name(labelName, lineNum, &fp_error_handler);    
 }
 
+/*HFThe following functions purpose is returning a pointer to the label in the labelTable array which its name matches the name entered. If no such label is found the function will return NULL
+ * labelTable - the labelTable array
+ * labelName - the name of the label we are looking for.
+ * labelCount - the current amount of labels in labelTable
+*/
 label* find_label(label *labelTable, char *labelName, int labelCount){
     int i;
 
@@ -263,6 +335,13 @@ label* find_label(label *labelTable, char *labelName, int labelCount){
     return NULL;
 }
 
+/* The following functions purpose is to further analyze each operand and add its matching word to the icImage
+ * icImage - a pointer to the icImage
+ * labelTable - a pointer to the labelTable array
+ * op - a pointer to the operation of which its operands are the operands we wish to analyze
+ * ic - a pointer to the ic counter
+ * labelCount - the current amount of labels in labelTable
+*/
 int add_operand_words(char ***icImage, label **labelTable, operation *op, int *ic, int labelCount){
     int sourceVal, destVal;
     int source_status, dest_status;
@@ -286,6 +365,11 @@ int add_operand_words(char ***icImage, label **labelTable, operation *op, int *i
     return TRUE;
 }
 
+/* The following functions purpose is to analyze the string representing the operand, and retrieve its addressing mode and value accordingly.
+ * op - a pointer to the operand which we want to analyze
+ * token - the string representation of that operand
+ * //lineNum 
+*/
 int get_operand_value(operand *op, char *token, int lineNum){
     char foo[1];
     char* endptr;
@@ -347,6 +431,12 @@ int get_type_val(label **labelTable, operand *operandd, int *val, int labelCount
     return TRUE;
 }
 
+/* The following functions purpose is getting and writing into 'binary' the binary word of the register values which it recieves. (NOTE: this function is necessary since the format of register words
+ is different, thus requiring different values and analsys)
+ * binary - the string into which the function writes the binary word
+ * sourceVal - the value of the source register
+ * destVal - the value of the destenation register
+*/
 int get_register_word(char* binary, int sourceVal, int destVal){
     memset(binary, '\0', 31);
 
@@ -358,6 +448,11 @@ int get_register_word(char* binary, int sourceVal, int destVal){
     return TRUE;
 }
 
+/* The following functions purpose is getting and writing into 'binary' the binary word of an operand (all types of operands except registers, which follow a differnt 'combined' format)
+ * operandd - a pointer to the operand which is getting its word written
+ * binary - a string to which we write the binary word of the operand
+ * val  
+*/
 int get_isolated_word(operand *operandd, char* binary, int val, int fp_status){
     if (fp_status == FALSE || operandd->addrMode == No_Operand)
         return FALSE;
@@ -391,8 +486,10 @@ int set_operands(operation *op, operand *operand1, operand *operand2){
 
 int get_comma_param_cnt(char* line, int lineNum){
     int i, status1, status2, paramCnt, commaCnt;
-    
+
     i = paramCnt = commaCnt = status1 = status2 = FALSE;
+    if (line == NULL) /* might be problem */
+        return TRUE;
 
     while (line[i] != '\n' && line[i] != '\0'){
         if (line[i] == ','){
@@ -415,10 +512,10 @@ int get_comma_param_cnt(char* line, int lineNum){
                 return fp_error_handler(Missing_Comma, lineNum);   /* two parameters in a row */
         }
         i++;
-        /* if (commaCnt > paramCnt)
-            return fp_error_handler(Extra_Comma, lineNum); */
+        if (commaCnt > paramCnt)
+            return fp_error_handler(Extra_Comma, lineNum);
     }
-    if (paramCnt <= commaCnt)
+    if (paramCnt == commaCnt)
         return fp_error_handler(Extra_Comma, lineNum);   /* extra comma at the end or at the start */
 
     return paramCnt;
@@ -448,7 +545,7 @@ int call_datastring_analyzer(char** lineToken, int** params, char* orgLineToken,
 
     *lineToken = strtok(NULL, PARAM_DELIMITERS);
     if (*lineToken == NULL)
-        return fp_error_handler(No_Params_DataString_Instruction, lineNum);
+        return fp_error_handler(Blank_DataString_Instruction, lineNum);
 
     if (commandCode == _DATA){
         analyze_data(lineToken, params, lineNum);
@@ -462,7 +559,6 @@ int call_datastring_analyzer(char** lineToken, int** params, char* orgLineToken,
   /* fix this function */
 char* get_param_pointer(char* orgLineToken, char toFind){
     int i;
-    
     i = 0;
 
     while (orgLineToken[i+1] != '\n' && orgLineToken[i+1] != '\0'){
@@ -520,10 +616,10 @@ int extent_handler(extentlabel** head, char** token, char* originalLine, int com
     char* paramsPtr;
 
     paramsPtr = get_param_pointer(originalLine, LAST_CHARACTER(*token));
-    *token = strtok(NULL, PARAM_DELIMITERS);
+    *token = strtok(NULL, " \t\n");
 
     if (*token == NULL)
-        return fp_error_handler(No_Lables_Extent_Marking, lineNum);
+        return fp_error_handler(Blank_Extent_Marking, lineNum);
 
     if (get_comma_param_cnt(paramsPtr, lineNum) != ERROR){
         while (*token != NULL){
@@ -555,13 +651,10 @@ int operation_handler(char*** icImage, label** labelTable, char** token, char* o
     char* paramPtr;
     operation op;
     operand operand1, operand2;
-    	
+
     paramPtr = get_param_pointer(originalLine, LAST_CHARACTER(*token));
-    if (paramPtr == NULL)
-    	return fp_error_handler(Missing_Operand, lineNum);
-    	
     paramCnt = get_comma_param_cnt(paramPtr, lineNum);
-    
+
     if (paramCnt >= 3)
         return fp_error_handler(Too_Many_Operands, lineNum);
 
@@ -599,7 +692,7 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
 
     while (read_input_file(&amFile, filename, ".am", originalLine, &lineNum) == TRUE){
         strcpy(line, originalLine);
-        token = strtok(line, PARAM_DELIMITERS);
+        token = strtok(line, " \t\n");
 
         isLabel = is_label(&token, labelName, lineNum);   /* NOTE: if label declaration is emtpy we get segmantation fault. */
                     
@@ -737,14 +830,14 @@ int fp_error_handler(int errorCode, int lineNum){
     case Blank_Label_Declaration:
         printf("Error: No code found after label declaration. Line: %d\n", lineNum);
         break;
-    case No_Lables_Extent_Marking:
-        printf("Error: No labels found after '.extern'/'.entry' marking. Line: %d\n", lineNum);
+    case Blank_Extent_Marking:
+        printf("Error: Empty '.extern'/'.entry' marking. Line: %d\n", lineNum);
         break;
     case Illegal_String_Char:
     	printf("Error: Illegal character entered in string. Line: %d\n", lineNum);
     	break;
-    case No_Params_DataString_Instruction:
-        printf("Error: No params found after '.data'/'string' instruction. Line: %d\n", lineNum);
+    case Blank_DataString_Instruction:
+        printf("Error: Empty '.data'/'string' instruction. Line: %d\n", lineNum);
         break;
     }
 

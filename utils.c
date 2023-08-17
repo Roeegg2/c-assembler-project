@@ -9,7 +9,7 @@ int read_input_file(FILE** sourceFile, char* filename, char* ending, char* line,
     }
 
     if (fgets(line, MAX_LINE_LENGTH, *sourceFile) == NULL)
-        return FALSE;
+        return FALSE;        
     
     (*lineNum)++;
     return TRUE;

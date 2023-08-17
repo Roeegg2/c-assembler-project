@@ -38,7 +38,9 @@ int invoke_preassembler(char* filename){
                 write_line(&amFile, head, token, originalLine);
         }
     }
-
+    
+    CHECK_EMPTY_FILE(asFile, lineNum, pa_status)
+    
     free_macros(head);
     fclose(amFile);
     

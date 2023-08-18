@@ -3,9 +3,8 @@ preassembler empty file and unknown file handling
 line bigger than 80 chars
 take care of secondpass last 2 lines in 2 funcs
 take care of line 999 error
-blank label
 blank .data .string with comma 
-blank operand with comma
+blank operation with comma
 
 
 make lineNum global

@@ -59,13 +59,6 @@ int main(int argc, char** argv){
         printf("-------- label table: --------\n");
         PRINTLABEL(labelTable, labelCount); */
 
-        /* close files */
-        /**
-         * free dcImage
-         * free icImage
-         * free labelTable
-        */
-
         free(labelTable);
         free_counter_array(&dcImage, dc);
         free_counter_array(&icImage, ic);
@@ -75,10 +68,3 @@ int main(int argc, char** argv){
     printf("\nProgram finished.\nFully processed %d/%d files.\n", fpf, i-1);
     return 0;
 }
-
-/** TODO:
- * 1. fix segmenation fault when there are no 2 operands in command
- * 2. error reporting when there are more than 2 operands in command
- * 3. error reporting a,b,c,
- * 4. 
-*/

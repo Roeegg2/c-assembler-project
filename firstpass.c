@@ -236,13 +236,12 @@ int add_extent_label(extentlabel** head, char** token, int type, int lineNum){
     return TRUE;
 }
 
-int is_label(char **token, char *labelName, int lineNum){
-    if (strlen(*token)-1 > MAX_LABEL_LENGTH)
-        return fp_error_handler(Label_Name_Too_Long, lineNum);
-    
+int is_label(char **token, char *labelName, int lineNum){    
     if (LAST_CHARACTER(*token) != ':')
         return FALSE;
     else{
+        if (strlen(*token)-1 > MAX_LABEL_LENGTH)
+        	return fp_error_handler(Label_Name_Too_Long, lineNum);
         LAST_CHARACTER(*token) = '\0';
         strcpy(labelName, *token);
         *token = strtok(NULL, PARAM_DELIMITERS);
@@ -603,29 +602,31 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
 
         isLabel = is_label(&token, labelName, lineNum);   /* NOTE: if label declaration is emtpy we get segmantation fault. */
                     
-        counterVal = *dc;
-        isData = TRUE;
-        if ((commandCode = is_extent_instruction(token)) != FALSE)
-            extent_handler(head, &token, originalLine, commandCode, lineNum);
+	if (isLabel != ERROR) {
+            counterVal = *dc;
+            isData = TRUE;
+            if ((commandCode = is_extent_instruction(token)) != FALSE)
+                extent_handler(head, &token, originalLine, commandCode, lineNum);
 
-        else if ((commandCode = is_datastring_instruction(token)) != FALSE)
-            datastring_handler(dcImage, &token, originalLine, dc, commandCode, lineNum);
+            else if ((commandCode = is_datastring_instruction(token)) != FALSE)
+                datastring_handler(dcImage, &token, originalLine, dc, commandCode, lineNum);
 
-        else if ((commandCode = is_operation(token)) != -1){
-            counterVal = *ic;
-            isData = FALSE;
+            else if ((commandCode = is_operation(token)) != -1){
+                counterVal = *ic;
+                isData = FALSE;
 
-            operation_handler(icImage, labelTable, &token, originalLine, ic, labelCount, commandCode, lineNum, sourceSequenceArray, destSequenceArray);
-        }
-        else
-            fp_error_handler(Unknown_Command, lineNum);
-
-        if (isLabel == TRUE){
-            if (commandCode == _ENTRY || commandCode == _EXTERN)
-                fp_warning_handler(Label_Points_At_ExternEntry, lineNum);
+                operation_handler(icImage, labelTable, &token, originalLine, ic, labelCount, commandCode, lineNum, sourceSequenceArray, destSequenceArray);
+            }
             else
-                add_label(labelTable, labelName, labelCount, counterVal, isData, lineNum);  /* remove ic and dc, make them global variables */
+                fp_error_handler(Unknown_Command, lineNum);
+
+            if (isLabel == TRUE){
+                if (commandCode == _ENTRY || commandCode == _EXTERN)
+                    fp_warning_handler(Label_Points_At_ExternEntry, lineNum);
+                else
+                    add_label(labelTable, labelName, labelCount, counterVal, isData, lineNum);  /* remove ic and dc, make them global variables */
               /* NOTE: if label there is not command, and then counter isnt pointing anywhere valid, what do we do? */
+            }
         }
 
         CHECK_BUFFER_OVERFLOW((*dc), (*ic))
@@ -735,7 +736,7 @@ int fp_error_handler(int errorCode, int lineNum){
         printf("Error: Undefined register. Line: %d\n", lineNum);
         break;
     case Blank_Label_Declaration:
-        printf("Error: No code found after label declaration. Line: %d\n", lineNum);
+        printf("Error: No command found after label declaration. Line: %d\n", lineNum);
         break;
     case No_Lables_Extent_Marking:
         printf("Error: No labels found after '.extern'/'.entry' marking. Line: %d\n", lineNum);

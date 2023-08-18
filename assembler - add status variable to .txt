@@ -1,12 +1,4 @@
-assembler - add status variable to be set when error encountered and not write to any file
-
-preassembler - set status variable and make that it wont write to file if theres error (add everything to an array and then write)
-
-firstpass - .entry and .extern multiple files declaration
-
-secondpass - convert to base64, 1.
-
-errors - ent/ext errors with labelTable, 
+PLANNING:
 
 
 ---------------------------------------------------

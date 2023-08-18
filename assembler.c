@@ -31,15 +31,12 @@ int PRINTLABEL(label *labelTable, int labelCount){
 int main(int argc, char** argv){
     label *labelTable;
     extentlabel *head;
-    int dc, ic, labelCount, status, i, fpf;
+    int dc, ic, labelCount, status;
     char **dcImage;
     char **icImage;
+    int i, fpf;
     fpf = 0;
-    char sourceSequenceArray[16][4], destSequenceArray[16][4];
-
-    set_sequence_array_source(sourceSequenceArray);
-    set_sequence_array_dest(destSequenceArray);
-
+    
     for (i = 1; i < argc; i++){
         dcImage = (char** )malloc(sizeof(char*));
         icImage = (char** )malloc(sizeof(char*));
@@ -47,29 +44,20 @@ int main(int argc, char** argv){
         head = NULL;
 
         dc = ic = 0;
-
         status = invoke_preassembler(argv[i]);
         if (status == TRUE)
-            status = invoke_firstpass(&dcImage, &icImage, &labelTable, &head, argv[i], &dc, &ic, &labelCount, sourceSequenceArray, destSequenceArray);
+            status = invoke_firstpass(&dcImage, &icImage, &labelTable, &head, argv[i], &dc, &ic, &labelCount);
         if (status == TRUE)
             invoke_secondpass(&dcImage, &icImage, labelTable, head, argv[i], labelCount, dc, ic, &fpf);
-        
-        printf("-------- ext/ent list: --------\n");
+
+/*         printf("-------- ext/ent list: --------\n");
         PRINTEXTENT(head);
         printf("-------- instructions words: --------\n");
         PRINTWORDS(icImage, ic, 0);
         printf("-------- data words: --------\n");
         PRINTWORDS(dcImage, dc, ic);
         printf("-------- label table: --------\n");
-        PRINTLABEL(labelTable, labelCount);    
-        
-        
-        /* close files
-        /**
-         * free dcImage
-         * free icImage
-         * free labelTable
-        */
+        PRINTLABEL(labelTable, labelCount); */
 
         free(labelTable);
         free_counter_array(&dcImage, dc);

@@ -29,11 +29,11 @@
 
 enum Opcodes {Mov = 0, Cmp, Add, Sub, Not, Clr, Lea, Inc, Dec, Jmp, Bne, Red, Prn, Jsr, Rts, Stop};
 enum AddressingModes {No_Operand = 0, Immediate = 1, Direct = 3, Register = 5};
-enum FirstpassErrors {Unknown_Command = 3, Extra_Comma, Double_Comma, Missing_Comma, 
+enum FirstpassErrors {Unknown_Command = 3, Comma_Error, Extra_Comma, Double_Comma, Missing_Comma, 
     Parameter_Not_Whole_Number, Parameter_Out_Of_Bounds, Invalid_Source_Sequence, Invalid_Dest_Sequence, 
     Illegal_String_Declaration, Label_Already_Defined, Extent_Label_Already_Defined_Differently, 
-    Label_Name_Too_Long, Undefined_Register, Blank_Label_Declaration, Missing_Dest_Operand, 
-    Missing_Source_Operand, Too_Many_Operands, Blank_Extent_Marking, Illegal_String_Char, Blank_DataString_Instruction};
+    Label_Name_Too_Long, Undefined_Register, Blank_Label_Declaration, Missing_Operand, 
+    Too_Many_Operands, No_Lables_Extent_Marking, Illegal_String_Char, No_Params_DataString_Instruction};
 enum Warnings {Label_Points_At_ExternEntry = 0, Extent_Label_Already_Defined_Similarly};
 
 typedef struct operand{
@@ -53,420 +53,356 @@ typedef struct operation{
 } operation;
 
 /**
- * @brief Processes an assembly file, generates intermediate code, and builds a label table.
+ * Converts a decimal number to a binary string representation.
  *
- * This function reads an assembly file, processes each line, and generates intermediate code.
- * It also maintains a label table and handles label declarations, instructions, and operations.
- *
- * @param dcImage Pointer to the data image array.
- * @param icImage Pointer to the instruction image array.
- * @param labelTable Pointer to the label table array.
- * @param head Pointer to the extent label list.
- * @param filename Name of the assembly file to be processed.
- * @param dc Pointer to the data counter.
- * @param ic Pointer to the instruction counter.
- * @param labelCount Pointer to the label count.
- * @param sourceSequenceArray Array of source operand sequence patterns.
- * @param destSequenceArray Array of destination operand sequence patterns.
- * @return The status of the function execution.
- */
-int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, extentlabel** head, char* filename, int* dc, int* ic, int* labelCount, char sourceSequenceArray[16][4], char destSequenceArray[16][4]);
-
-/**
- * @brief Checks if an operand's addressing mode is valid for a given operation.
- *
- * This function validates whether the addressing mode of an operand is valid
- * for a specific operation by comparing it with the allowed addressing modes
- * defined in the sequence array.
- *
- * @param sequenceArr Array of operand sequence patterns for different operations.
- * @param operandd Pointer to the operand to be validated.
- * @param opcode Opcode of the operation being checked.
- * @param sourceOrDest Flag indicating whether the operand is a source or destination operand.
- * @return The validation status of the operand's addressing mode for the operation.
- */
-int check_param_sequence(char sequenceArr[16][4], operand* operandd, int opcode, int sourceOrDest);
-
-/**
- * @brief Converts an integer to its binary representation.
- *
- * This function converts an integer value to its binary representation of a specified size.
- * It handles both positive and negative numbers and performs 2's complement conversion for negative numbers.
- *
- * @param binary Pointer to the output buffer for the binary representation.
- * @param number The integer number to be converted.
- * @param size The size of the binary representation.
- * @return The success status of the conversion.
+ * @param binary - The output binary string.
+ * @param number - The decimal number to be converted.
+ * @param size   - The size of the binary string buffer.
+ * @return 0 on success.
  */
 int convert_to_binary(char binary[], int number, int size);
 
 /**
- * @brief Flips the bits of a binary string to perform 1's complement.
+ * Flips the bits of a binary string representing a negative number.
  *
- * This function flips the bits of a binary string, performing a 1's complement operation.
- *
- * @param binary The binary string to be flipped.
- * @return The success status of the operation.
+ * @param binary - The binary string to be flipped.
+ * @return TRUE on success.
  */
 int flip_negative(char binary[]);
 
 /**
- * @brief Adds one to a binary string to perform 2's complement for negative numbers.
+ * Adds one to a binary string representing a positive number.
  *
- * This function adds one to a binary string, performing a carry operation to achieve
- * 2's complement conversion for negative numbers.
- *
- * @param binary The binary string to which one is added.
- * @return The success status of the operation.
+ * @param binary - The binary string to which one will be added.
+ * @return TRUE on success.
  */
 int add_one(char binary[]);
 
 /**
- * @brief Adds a new label entry to the label table.
+ * Adds a label to the label table.
  *
- * This function adds a new label entry to the label table with its details such as name, line number,
- * address, and whether it is an instruction.
- *
- * @param labelTable Pointer to the label table array.
- * @param labelName The name of the label.
- * @param labelCount Pointer to the label count.
- * @param counterValue The counter value associated with the label.
- * @param isInstruction Flag indicating if the label is associated with an instruction.
- * @return The success status of adding the label.
+ * @param labelTable  - Pointer to the label table.
+ * @param labelName   - Name of the label.
+ * @param labelCount  - Pointer to the label count.
+ * @param counterValue - Current counter value.
+ * @param isData       - Flag indicating if the label corresponds to data.
+ * @param lineNum      - Line number of the label declaration.
+ * @return TRUE on success.
  */
-int add_label(label **labelTable, char *labelName, int *labelCount, int counterValue, int isInstruction);
+int add_label(label **labelTable, char *labelName, int *labelCount, int counterValue, int isData, int lineNum);
 
 /**
- * @brief Adds the first operand's word to the instruction image.
+ * Adds the Absolute Relocatable External (ARE) code to a binary string.
  *
- * This function constructs and adds the first operand's word to the instruction image
- * by encoding the source operand's addressing mode, opcode, and ARE fields.
+ * @param binary - The binary string to which the ARE code will be added.
+ * @param are    - The ARE code to be added.
+ * @return 0.
+ */
+int add_are(char *binary, char *are);
+
+/**
+ * Adds the first operand word of an operation to the instruction counter image.
  *
- * @param icImage Pointer to the instruction image array.
- * @param op Pointer to the operation structure.
- * @param ic Pointer to the instruction counter.
- * @return The success status of adding the word.
+ * @param icImage - Pointer to the instruction counter image.
+ * @param op      - Pointer to the operation.
+ * @param ic      - Pointer to the instruction counter.
+ * @return 0.
  */
 int add_first_op_word(char ***icImage, operation *op, int *ic);
 
 /**
- * @brief Determines the opcode value for a given operation name.
+ * Checks if a given string corresponds to an assembly operation.
  *
- * This function maps an operation name to its corresponding opcode value.
- *
- * @param opname The operation name.
- * @return The opcode value for the operation, or -1 if not found.
+ * @param opname - The string to be checked.
+ * @return The operation code if it's a valid operation, or -1 if not.
  */
 int is_operation(char *opname);
 
 /**
- * @brief Checks the formatting of a string line and identifies the indices of the string content.
+ * Analyzes a string literal and stores its characters as integer parameters.
  *
- * This function examines the formatting of a string line to ensure it is enclosed within double quotes.
- * It also identifies the indices of the start and end of the string content within the line.
- *
- * @param stringLine The string line to be checked.
- * @param index1 Pointer to store the index of the start of the string content.
- * @param index2 Pointer to store the index of the end of the string content.
- * @return The validation status of the string formatting.
+ * @param params      - Pointer to the parameter array.
+ * @param stringLine  - The string literal to be analyzed.
+ * @param lineNum     - Line number of the string declaration.
+ * @return The number of characters in the string + 1 (for null terminator) on success.
  */
-int check_string_formatting(char* stringLine, int *index1, int *index2);
+int analyze_string(int **params, char *stringLine, int lineNum);
 
 /**
- * @brief Analyzes a string declaration and converts it to an array of integers.
+ * Analyzes data parameters and stores them as integer parameters.
  *
- * This function analyzes a string declaration and converts the string content into an array of integers.
- * It validates the string format, handles escape characters, and converts each character to its ASCII value.
- *
- * @param stringConverted Pointer to store the converted integer array.
- * @param stringLine The string line to be analyzed and converted.
- * @return The number of characters converted, or an error status if conversion fails.
+ * @param token   - Pointer to the token string.
+ * @param params  - Pointer to the parameter array.
+ * @param lineNum - Line number of the data declaration.
+ * @return TRUE on success.
  */
-int analyze_string(int** stringConverted, char* stringLine);
+int analyze_data(char **token, int **params, int lineNum);
 
 /**
- * @brief Analyzes a data declaration and converts parameters to an array of integers.
+ * Adds words to the data counter image representing a data string.
  *
- * This function analyzes a data declaration, extracts and validates parameters, and converts them to an array of integers.
- *
- * @param token Pointer to the token containing the data parameters.
- * @param params Pointer to store the converted integer array.
- * @return The success status of analyzing and converting the data.
+ * @param dcImage   - Pointer to the data counter image.
+ * @param params    - Pointer to the parameter array.
+ * @param dc        - Pointer to the data counter.
+ * @param paramCnt  - Number of parameters in the array.
+ * @param lineNum   - Line number of the data declaration.
+ * @return TRUE on success.
  */
-int analyze_data(char** token, int** params);
+int add_datastring_word(char ***dcImage, int *params, int *dc, int paramCnt, int lineNum);
 
 /**
- * @brief Adds data words to the data image.
+ * Finds an extent label by name in the linked list.
  *
- * This function converts and adds data parameters to the data image as binary words.
- *
- * @param dcImage Pointer to the data image array.
- * @param params Pointer to the array of data parameters.
- * @param dc Pointer to the data counter.
- * @param paramCnt The number of parameters.
- * @return The success status of adding the data words.
+ * @param head      - Pointer to the head of the linked list.
+ * @param labelName - The name of the label to find.
+ * @return Pointer to the found label or NULL if not found.
  */
-int add_data_word(char ***dcImage, int *params, int *dc, int paramCnt);
+extentlabel *find_extent_label(extentlabel *head, char *labelName);
 
 /**
- * @brief Finds an extent label in the extent label list.
+ * Adds an extent label to the linked list.
  *
- * This function searches the extent label list for a label with a given name and returns its node.
- *
- * @param head Pointer to the head of the extent label list.
- * @param labelName The name of the label to be found.
- * @return The pointer to the extent label node, or NULL if not found.
+ * @param head      - Pointer to the head of the linked list.
+ * @param token     - Pointer to the token string containing the label name.
+ * @param type      - The type of the label.
+ * @param lineNum   - Line number of the label declaration.
+ * @return TRUE on success.
  */
-extentlabel* find_extent_label(extentlabel* head, char* labelName);
+int add_extent_label(extentlabel **head, char **token, int type, int lineNum);
 
 /**
- * @brief Adds an extent label entry to the extent label list.
+ * Checks if the given token is a label declaration.
  *
- * This function adds an extent label entry to the extent label list with its details, such as name and type.
- *
- * @param head Pointer to the head of the extent label list.
- * @param token Pointer to the token containing the label name.
- * @param type The type of the extent label (EXTERNAL or ENTRY).
- * @return The success status of adding the extent label.
+ * @param token     - Pointer to the token string.
+ * @param labelName - The label name extracted from the token.
+ * @param lineNum   - Line number of the token.
+ * @return FALSE if not a label declaration, otherwise, the result of legal_label_macro_name function.
  */
-int add_extent_label(extentlabel** head, char** token, int type);
+int is_label(char **token, char *labelName, int lineNum);
 
 /**
- * @brief Checks if a token is a label declaration.
+ * Finds a label in the label table by its name.
  *
- * This function checks if a token ends with a colon, indicating a label declaration.
- *
- * @param token Pointer to the token to be checked.
- * @param labelName Pointer to store the extracted label name.
- * @param line Pointer to the line containing the token.
- * @return The label status (TRUE if label declaration, FALSE otherwise).
+ * @param labelTable  - Pointer to the label table.
+ * @param labelName   - The name of the label to find.
+ * @param labelCount  - Number of labels in the table.
+ * @return Pointer to the found label or NULL if not found.
  */
-int is_label(char **token, char *labelName, char *line);
+label *find_label(label *labelTable, char *labelName, int labelCount);
 
 /**
- * @brief Finds a label in the label table.
+ * Adds operand words to the instruction counter image.
  *
- * This function searches the label table for a label with a given name and returns its entry.
- *
- * @param labelTable Pointer to the label table array.
- * @param labelName The name of the label to be found.
- * @param labelCount The number of labels in the table.
- * @return The pointer to the label entry, or NULL if not found.
- */
-label* find_label(label *labelTable, char *labelName, int labelCount);
-
-/**
- * @brief Adds operand words to the instruction image.
- *
- * This function converts and adds operand parameters to the instruction image as binary words.
- *
- * @param icImage Pointer to the instruction image array.
- * @param labelTable Pointer to the label table array.
- * @param op Pointer to the operation structure.
- * @param ic Pointer to the instruction counter.
- * @param labelCount The number of labels in the label table.
- * @return The success status of adding the operand words.
+ * @param icImage     - Pointer to the instruction counter image.
+ * @param labelTable  - Pointer to the label table.
+ * @param op          - Pointer to the operation.
+ * @param ic          - Pointer to the instruction counter.
+ * @param labelCount  - Number of labels in the table.
+ * @return TRUE on success.
  */
 int add_operand_words(char ***icImage, label **labelTable, operation *op, int *ic, int labelCount);
 
 /**
- * @brief Gets the value of an operand and updates its attributes.
+ * Gets the value of an operand from a token and stores it in the operand structure.
  *
- * This function analyzes the token to determine the type of operand (numeric, register, or label)
- * and updates the operand structure accordingly.
- *
- * @param op Pointer to the operand structure to be updated.
- * @param token Pointer to the token containing the operand information.
- * @return The success status of getting the operand value.
+ * @param op       - Pointer to the operand structure.
+ * @param token    - Pointer to the token string.
+ * @param lineNum  - Line number of the token.
+ * @return TRUE on success.
  */
-int get_operand_value(operand* op, char* token);
+int get_operand_value(operand *op, char *token, int lineNum);
 
 /**
- * @brief Determines the value of an operand based on its addressing mode.
+ * Gets the value of an operand depending on its address mode.
  *
- * This function determines the value of an operand based on its addressing mode and updates the provided value.
- *
- * @param labelTable Pointer to the label table array.
- * @param operandd Pointer to the operand structure.
- * @param val Pointer to store the operand value.
- * @param labelCount The number of labels in the label table.
- * @return The success status of determining the operand value.
+ * @param labelTable  - Pointer to the label table.
+ * @param operandd    - Pointer to the operand structure.
+ * @param val         - Pointer to the integer value to be retrieved.
+ * @param labelCount  - Number of labels in the table.
+ * @return TRUE on success.
  */
 int get_type_val(label **labelTable, operand *operandd, int *val, int labelCount);
 
 /**
- * @brief Creates a binary word for a pair of register values.
+ * Generates a binary representation of a pair of register values.
  *
- * This function constructs a binary word that represents a pair of register values for a combined instruction.
- *
- * @param binary Pointer to the buffer to store the binary word.
- * @param sourceVal The source register value.
- * @param destVal The destination register value.
- * @return The success status of creating the binary register word.
+ * @param binary     - The output binary string.
+ * @param sourceVal  - Value of the source register.
+ * @param destVal    - Value of the destination register.
+ * @return TRUE on success.
  */
-int get_register_word(char* binary, int sourceVal, int destVal);
+int get_register_word(char *binary, int sourceVal, int destVal);
 
 /**
- * @brief Creates a binary word for an isolated operand.
+ * Generates a binary representation of an operand value in isolated mode.
  *
- * This function constructs a binary word that represents an isolated operand value.
- *
- * @param operandd Pointer to the operand structure.
- * @param binary Pointer to the buffer to store the binary word.
- * @param val The operand value.
- * @return The success status of creating the binary isolated operand word.
+ * @param operandd  - Pointer to the operand structure.
+ * @param binary    - The output binary string.
+ * @param val       - Operand value.
+ * @param fp_status - Status indicating operand validity.
+ * @return TRUE if operand is valid, otherwise FALSE.
  */
-int get_isolated_word(operand *operandd, char* binary, int val);
+int get_isolated_word(operand *operandd, char *binary, int val, int fp_status);
 
 /**
- * @brief Sets the source and destination operands for an operation.
+ * Sets the source and destination operands of an operation.
  *
- * This function sets the source and destination operands for an operation based on the number of operands provided.
- *
- * @param op Pointer to the operation structure.
- * @param operand1 Pointer to the first operand structure.
- * @param operand2 Pointer to the second operand structure.
- * @return The success status of setting the operands.
+ * @param op          - Pointer to the operation structure.
+ * @param operand1    - Pointer to the first operand structure.
+ * @param operand2    - Pointer to the second operand structure.
+ * @return TRUE on success.
  */
 int set_operands(operation *op, operand *operand1, operand *operand2);
 
 /**
- * @brief Determines the count of parameters separated by commas in a line.
+ * Gets the count of parameters separated by commas in a line.
  *
- * This function counts the number of parameters separated by commas in a line.
- *
- * @param line Pointer to the line to be analyzed.
+ * @param line     - The line containing the parameters.
+ * @param lineNum  - Line number of the line.
  * @return The count of parameters.
  */
-int get_comma_param_cnt(char* line);
+int get_comma_param_cnt(char *line, int lineNum);
 
 /**
- * @brief Checks if a token corresponds to an extent instruction.
+ * Checks if a given token is an extent instruction (entry or extern).
  *
- * This function checks if a token corresponds to a ".entry" or ".extern" instruction.
- *
- * @param token Pointer to the token to be checked.
- * @return The instruction type (EXTENTRY if ".entry", EXTEXTERN if ".extern", or FALSE if neither).
+ * @param token - The token to be checked.
+ * @return The type of extent instruction if it matches, otherwise FALSE.
  */
-int is_extent_instruction(char* token);
+int is_extent_instruction(char *token);
 
 /**
- * @brief Checks if a token corresponds to a data or string instruction.
+ * Checks if a given token is a data or string instruction.
  *
- * This function checks if a token corresponds to a ".data" or ".string" instruction.
- *
- * @param token Pointer to the token to be checked.
- * @return The instruction type (DATADATA if ".data", DATASTRING if ".string", or FALSE if neither).
+ * @param token - The token to be checked.
+ * @return The type of data or string instruction if it matches, otherwise FALSE.
  */
-int is_datastring_instruction(char* token);
+int is_datastring_instruction(char *token);
 
 /**
- * @brief Calls the appropriate analyzer for data or string instructions.
+ * Calls the datastring analyzer function based on the commandCode and handles data or string instructions.
  *
- * This function determines the type of data or string instruction and calls the respective analyzer.
- *
- * @param lineToken Pointer to the token containing the line.
- * @param params Pointer to store the converted integer array.
- * @param orgLineToken Original token before any changes.
- * @param commandCode The command code indicating the instruction type.
- * @return The result of analyzing the instruction and its parameters.
+ * @param lineToken       - Pointer to the tokenized line.
+ * @param params          - Pointer to the array of parameter values.
+ * @param orgLineToken    - Original line token string.
+ * @param lineNum         - Line number.
+ * @param commandCode     - Command code indicating whether it's .data or .string.
+ * @return The number of parameters analyzed.
  */
-int call_datastring_analyzer(char** lineToken, int** params, char* orgLineToken, int commandCode);
+int call_datastring_analyzer(char **lineToken, int **params, char *orgLineToken, int lineNum, int commandCode);
 
 /**
- * @brief Retrieves a pointer to the next parameter after a specific character.
+ * Retrieves a pointer to the first parameter in a line after a specific character.
  *
- * This function retrieves a pointer to the next parameter after a specific character in the line.
- *
- * @param orgLineToken Original token containing the line.
- * @param toFind The character to find.
- * @return Pointer to the next parameter after the specified character, or NULL if not found.
+ * @param orgLineToken  - Original line token string.
+ * @param toFind        - The character to find after which the parameter pointer is needed.
+ * @return Pointer to the first parameter after the character, or NULL if not found.
  */
-char* get_param_pointer(char* orgLineToken, char toFind);
+char *get_param_pointer(char *orgLineToken, char toFind);
 
 /**
- * @brief Initializes the destination operand sequence array for various opcodes.
+ * Sets the sequence array for destination operands in operations.
  *
- * This function initializes the sequenceArray with destination operand sequences for different opcodes.
- *
- * @param sequenceArray The array to store the destination operand sequences.
- * @return The success status of array initialization.
+ * @param sequenceArray - The destination operand sequence array to be set.
+ * @return TRUE on success.
  */
 int set_sequence_array_dest(char sequenceArray[16][4]);
 
 /**
- * @brief Initializes the source operand sequence array for various opcodes.
+ * Sets the sequence array for source operands in operations.
  *
- * This function initializes the sequenceArray with source operand sequences for different opcodes.
- *
- * @param sequenceArray The array to store the source operand sequences.
- * @return The success status of array initialization.
+ * @param sequenceArray - The source operand sequence array to be set.
+ * @return TRUE on success.
  */
 int set_sequence_array_source(char sequenceArray[16][4]);
 
 /**
- * @brief Handles extent marking in the source code.
+ * Handles extent label declaration.
  *
- * This function processes the extent marking in the source code and adds extent labels to the linked list.
- *
- * @param head Pointer to the extent label linked list.
- * @param token Pointer to the current token.
- * @param originalLine Pointer to the original line containing the extent marking.
- * @param commandCode The command code indicating the extent instruction type.
- * @return The success status of extent marking processing.
+ * @param head         - Pointer to the extent label list head.
+ * @param token        - Pointer to the current token.
+ * @param originalLine - Original line string.
+ * @param commandCode  - Command code (_EXTERN or _ENTRY).
+ * @param lineNum      - Line number.
+ * @return TRUE on success.
  */
-int extent_handler(extentlabel** head, char** token, char* originalLine, int commandCode);
+int extent_handler(extentlabel **head, char **token, char *originalLine, int commandCode, int lineNum);
 
 /**
- * @brief Handles data and string instructions in the source code.
+ * Handles data or string instructions during the first pass.
  *
- * This function processes data and string instructions in the source code and adds data words to the dcImage.
- *
- * @param dcImage Pointer to the dcImage array.
- * @param token Pointer to the current token.
- * @param originalLine Pointer to the original line containing the data or string instruction.
- * @param dc Pointer to the data counter.
- * @param commandCode The command code indicating the data or string instruction type.
- * @return The success status of data or string instruction processing.
+ * @param dcImage       - Pointer to the data counter image.
+ * @param token         - Pointer to the current token.
+ * @param originalLine  - Original line string.
+ * @param dc            - Pointer to the data counter.
+ * @param commandCode   - Command code indicating .data or .string.
+ * @param lineNum       - Line number.
+ * @return TRUE on success.
  */
-int datastring_handler(char*** dcImage, char** token, char* originalLine, int* dc, int commandCode);
+int datastring_handler(char ***dcImage, char **token, char *originalLine, int *dc, int commandCode, int lineNum);
 
 /**
- * @brief Handles operation instructions in the source code.
+ * Handles operations during the first pass.
  *
- * This function processes operation instructions in the source code, validates operands, and adds operation words to the icImage.
- *
- * @param icImage Pointer to the icImage array.
- * @param labelTable Pointer to the label table array.
- * @param token Pointer to the current token.
- * @param originalLine Pointer to the original line containing the operation instruction.
- * @param ic Pointer to the instruction counter.
- * @param labelCount Pointer to the label count.
- * @param commandCode The command code indicating the operation instruction type.
- * @param sourceSequenceArray The array containing source operand sequences.
- * @param destSequenceArray The array containing destination operand sequences.
- * @return The success status of operation instruction processing.
+ * @param icImage          - Pointer to the instruction counter image.
+ * @param labelTable       - Pointer to the label table.
+ * @param token            - Pointer to the current token.
+ * @param originalLine     - Original line string.
+ * @param ic               - Pointer to the instruction counter.
+ * @param labelCount       - Pointer to the label count.
+ * @param commandCode      - Command code indicating the operation.
+ * @param lineNum          - Line number.
+ * @param sourceSequenceArray - Sequence array for source operands.
+ * @param destSequenceArray   - Sequence array for destination operands.
+ * @return TRUE on success.
  */
-int operation_handler(char*** icImage, label** labelTable, char** token, char* originalLine, int* ic, int* labelCount, int commandCode, char sourceSequenceArray[16][4], char destSequenceArray[16][4]);
+int operation_handler(char ***icImage, label **labelTable, char **token, char *originalLine, int *ic, int *labelCount, int commandCode, int lineNum, char sourceSequenceArray[16][4], char destSequenceArray[16][4]);
 
 /**
- * @brief Handles warning messages generated during assembly.
+ * Checks if the operand sequence is valid for an operation.
  *
- * This function handles and prints warning messages during the assembly process.
- *
- * @param warningCode The code indicating the type of warning.
- * @return The success status of warning handling.
+ * @param sequenceArr - Operand sequence array (source or destination).
+ * @param operandd    - Pointer to the operand structure.
+ * @param opcode      - Operation opcode.
+ * @param lineNum     - Line number.
+ * @param sourceOrDest - Flag indicating whether the sequence is for source or destination.
+ * @return TRUE if the sequence is valid, otherwise an error code.
  */
-int fp_warning_handler(int warningCode);
+int check_param_sequence(char sequenceArr[16][4], operand *operandd, int opcode, int lineNum, int sourceOrDest);
 
 /**
- * @brief Handles error messages generated during assembly.
+ * Handles warnings during the first pass.
  *
- * This function handles and prints error messages during the assembly process.
- *
- * @param errorCode The code indicating the type of error.
- * @return The error status.
+ * @param warningCode - Warning code indicating the type of warning.
+ * @param lineNum     - Line number.
+ * @return TRUE on success.
  */
-int fp_error_handler(int errorCode);
+int fp_warning_handler(int warningCode, int lineNum);
+
+/**
+ * Handles errors during the first pass.
+ *
+ * @param errorCode  - Error code indicating the type of error.
+ * @param lineNum    - Line number.
+ * @return An error code (ERROR) indicating an error occurred.
+ */
+int fp_error_handler(int errorCode, int lineNum);
+
+/**
+ * Performs the first pass of the assembly process for the given assembly code file.
+ *
+ * @param dcImage      Double pointer to the data code (dc) image array.
+ * @param icImage      Double pointer to the instruction code (ic) image array.
+ * @param labelTable   Double pointer to the label table array.
+ * @param head         Double pointer to the extent label linked list.
+ * @param filename     Pointer to the filename of the assembly code file.
+ * @param dc           Pointer to the data counter value.
+ * @param ic           Pointer to the instruction counter value.
+ * @param labelCount   Pointer to the label count value.
+ *
+ * @return Returns the status of the assembly process.
+ */
+int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, extentlabel** head, char* filename, int* dc, int* ic, int* labelCount);
+
 
 #endif /* FIRSTPASS_H */

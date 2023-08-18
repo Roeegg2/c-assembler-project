@@ -6,7 +6,7 @@
 #include <string.h>
 
 /* change these later */
-#define MAX_LINE_LENGTH 82 
+#define MAX_LINE_LENGTH 82
 #define MAX_LABEL_LENGTH 31
 #define MAX_FILENAME_LENGTH 20
 

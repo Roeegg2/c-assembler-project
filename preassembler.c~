@@ -41,8 +41,7 @@ int invoke_preassembler(char* filename){
     
     free_macros(head);
     
-    CHECK_PROMPTED_FILE_STATUS(asFile, pa_status)
-    CHECK_EMPTY_FILE(amFile, line, lineNum, pa_status)
+    CHECK_EMPTY_FILE(amFile, line, lineNum, status)
     
     if (pa_status == ERROR)
         remove_file(filename, ".am");

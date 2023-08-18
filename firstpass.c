@@ -2,6 +2,7 @@
 #include "shared.h"
 #include "utils.h"
 
+<<<<<<< HEAD
 
 int fp_status; /*A flag variable. Its value is error if one is found, otherwise it stays true*/
 int fp_lineNum; /*A variable to keep track of the current line of the .am file*/
@@ -91,6 +92,8 @@ int check_param_sequence(char sequenceArr[16][4], operand* operandd, int opcode,
 /*function that receives a string, a number and a size, and writes into the string the binary */
 /* what is counter type? maybe switch (*labelTable) with something more readable? */
 /* might break when number entered is negative */
+=======
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
 int convert_to_binary(char binary[], int number, int size){
     int isNegative, i;
 
@@ -120,14 +123,17 @@ int convert_to_binary(char binary[], int number, int size){
 
 int flip_negative(char binary[]){
     int i;
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
     for (i = 0; i < strlen(binary); i++)
         binary[i] = (binary[i] == '0') ? '1' : '0';
 
     return TRUE;
 }
 
-/*a helper function to add 1 to the the binary repressentation for negative numbers. Part of the 2's complement steps*/
 int add_one(char binary[]){
     int carry, i;
     carry = 1;
@@ -159,7 +165,7 @@ int add_label(label **labelTable, char *labelName, int *labelCount, int counterV
     (*labelTable)[*labelCount].isInstruction = isInstruction;
     (*labelCount)++;
 
-    return 0;
+    return TRUE;
 }
 
 int add_first_op_word(char ***icImage, operation *op, int *ic){
@@ -214,7 +220,11 @@ int is_operation(char *opname){
     return -1;
 }
 
+<<<<<<< HEAD
 int check_string_formatting(char* stringLine, int *index1, int *index2){
+=======
+int analyze_string(int** params, char* stringLine, int lineNum){
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
     int i;
 
     *index1 = *index2 = FALSE;
@@ -258,21 +268,30 @@ int analyze_string(int** stringConverted, char* stringLine){
     stringLine += index1+1;
 
     for (i = 0; i < strlen(stringLine); i++){
-        (*stringConverted) = (int*)realloc((*stringConverted), sizeof(int) * (i + 1));
-        CHECK_ALLOCATION_ERROR((*stringConverted))
+        (*params) = (int*)realloc((*params), sizeof(int) * (i + 1));
+        CHECK_ALLOCATION_ERROR((*params))
 
+<<<<<<< HEAD
         (*stringConverted)[i] = (int)stringLine[i];
         if ((*stringConverted)[i] < 32 || (*stringConverted)[i] > 126)
             return fp_error_handler(Illegal_String_Char);
+=======
+        (*params)[i] = (int)stringLine[i];
+        if ((*params)[i] < 32 || (*params)[i] > 126)
+            return fp_error_handler(Illegal_String_Char, lineNum);
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
     }
     /*adding the null terminator word */
-    (*stringConverted) = (int*)realloc((*stringConverted), sizeof(int) * (i + 1));
-    CHECK_ALLOCATION_ERROR((*stringConverted))
+    (*params) = (int*)realloc((*params), sizeof(int) * (i + 1));
+    CHECK_ALLOCATION_ERROR((*params))
 
-    (*stringConverted)[i] = 0;
+    (*params)[i] = 0;
 
     return i+1;
+<<<<<<< HEAD
     /* write_data(stringConverted, strlen(stringLine)+1); */
+=======
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
 }
 
 int analyze_data(char** token, int** params){
@@ -300,7 +319,11 @@ int analyze_data(char** token, int** params){
     return TRUE;
 }
 
+<<<<<<< HEAD
 int add_data_word(char ***dcImage, int *params, int *dc, int paramCnt){
+=======
+int add_datastring_word(char ***dcImage, int *params, int *dc, int paramCnt, int lineNum){
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
     int i;
     char binary[13];
 
@@ -322,11 +345,18 @@ extentlabel* find_extent_label(extentlabel* head, char* labelName){
     return NULL;
 }
 
+<<<<<<< HEAD
 /* want to change implementation */
 int add_extent_label(extentlabel** head, char** token, int type){
     extentlabel* newNode;
     extentlabel* temp;
 
+=======
+int add_extent_label(extentlabel** head, char** token, int type, int lineNum){
+    extentlabel* newNode;
+    extentlabel* temp;
+    
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
     newNode = (extentlabel *)calloc(1, sizeof(extentlabel));
     CHECK_ALLOCATION_ERROR((newNode))
 
@@ -358,12 +388,21 @@ int add_extent_label(extentlabel** head, char** token, int type){
     return TRUE;
 }
 
+<<<<<<< HEAD
 int is_label(char **token, char *labelName, char *line){    
     if (LAST_CHARACTER(*token) != ':') /*If token doesnt end with ':' - it is not a label declaration*/
         return FALSE;
     else if (strlen(*token)-1 > MAX_LABEL_LENGTH)
         return fp_error_handler(Label_Name_Too_Long);
     else{ /*Removing the ':' to extract labelName*/
+=======
+int is_label(char **token, char *labelName, int lineNum){    
+    if (LAST_CHARACTER(*token) != ':')
+        return FALSE;
+    else{
+        if (strlen(*token)-1 > MAX_LABEL_LENGTH)
+        	return fp_error_handler(Label_Name_Too_Long, lineNum);
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
         LAST_CHARACTER(*token) = '\0';
         strcpy(labelName, *token);
         *token = strtok(NULL, PARAM_DELIMITERS);
@@ -514,10 +553,13 @@ int set_operands(operation *op, operand *operand1, operand *operand2) {
 
 int get_comma_param_cnt(char* line) {
     int i, status1, status2, paramCnt, commaCnt;
-
+    
     i = paramCnt = commaCnt = status1 = status2 = FALSE;
+<<<<<<< HEAD
     if (line == NULL)
         return TRUE;
+=======
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
 
     /*While we havent reached the end of the string*/
     while (line[i] != '\n' && line[i] != '\0') {
@@ -542,11 +584,19 @@ int get_comma_param_cnt(char* line) {
                 return fp_error_handler(Missing_Comma); /* Two parameters in a row */
         }
         i++;
+<<<<<<< HEAD
         if (commaCnt > paramCnt)
             return fp_error_handler(Extra_Comma);
     }
     if (paramCnt == commaCnt)
         return fp_error_handler(Extra_Comma); /* Extra comma at the end or at the start */
+=======
+        /* if (commaCnt > paramCnt)
+            return fp_error_handler(Extra_Comma, lineNum); */
+    }
+    if (paramCnt <= commaCnt)
+        return fp_error_handler(Extra_Comma, lineNum);   /* extra comma at the end or at the start */
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
 
     return paramCnt;
 }
@@ -575,7 +625,11 @@ int call_datastring_analyzer(char** lineToken, int** params, char* orgLineToken,
 
     *lineToken = strtok(NULL, PARAM_DELIMITERS);
     if (*lineToken == NULL)
+<<<<<<< HEAD
         return fp_error_handler(Blank_DataString_Instruction);
+=======
+        return fp_error_handler(No_Params_DataString_Instruction, lineNum);
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
 
     if (commandCode == _DATA) {
         analyze_data(lineToken, params); /*If command is Data analyze data parameters */
@@ -587,6 +641,7 @@ int call_datastring_analyzer(char** lineToken, int** params, char* orgLineToken,
 
 char* get_param_pointer(char* orgLineToken, char toFind) {
     int i;
+    
     i = 0;
 
     /* While we havent reached the end of the string */
@@ -650,10 +705,17 @@ int extent_handler(extentlabel** head, char** token, char* originalLine, int com
 
     /* Find the pointer to the parameters after the token */
     paramsPtr = get_param_pointer(originalLine, LAST_CHARACTER(*token));
+<<<<<<< HEAD
     *token = strtok(NULL, " \t\n"); /* Move to the next token */
 
     if (*token == NULL)
         return fp_error_handler(Blank_Extent_Marking); /* Blank extent marking error */
+=======
+    *token = strtok(NULL, PARAM_DELIMITERS);
+
+    if (*token == NULL)
+        return fp_error_handler(No_Lables_Extent_Marking, lineNum);
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
 
     /* Check if parameters exist after the token and process them */
     if (get_comma_param_cnt(paramsPtr) != ERROR) {
@@ -678,7 +740,11 @@ int datastring_handler(char*** dcImage, char** token, char* originalLine, int* d
 
     /* Check if parameters were successfully analyzed and process them */
     if (paramCnt != -1)
+<<<<<<< HEAD
         add_data_word(dcImage, params, dc, paramCnt); /* Add data word to the dcImage */
+=======
+        add_datastring_word(dcImage, params, dc, paramCnt, lineNum);
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
 
     free(params); /* Free the memory allocated for parameters */
     return TRUE; /* Datastring processing successful */
@@ -689,6 +755,7 @@ int operation_handler(char*** icImage, label** labelTable, char** token, char* o
     char* paramPtr;
     operation op;
     operand operand1, operand2;
+<<<<<<< HEAD
 
     /* Find the pointer to the parameters after the token */
     paramPtr = get_param_pointer(originalLine, LAST_CHARACTER(*token));
@@ -696,6 +763,15 @@ int operation_handler(char*** icImage, label** labelTable, char** token, char* o
     paramCnt = get_comma_param_cnt(paramPtr);
 
     /* Check if the number of parameters is valid */
+=======
+    	
+    paramPtr = get_param_pointer(originalLine, LAST_CHARACTER(*token));
+    if (paramPtr == NULL)
+    	return fp_error_handler(Missing_Operand, lineNum);
+    	
+    paramCnt = get_comma_param_cnt(paramPtr, lineNum);
+    
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
     if (paramCnt >= 3)
         return fp_error_handler(Too_Many_Operands); /* Too many operands error */
     else if (paramCnt != ERROR) {
@@ -715,7 +791,94 @@ int operation_handler(char*** icImage, label** labelTable, char** token, char* o
     return TRUE; /* Operation processing successful */
 }
 
+<<<<<<< HEAD
 int fp_warning_handler(int warningCode){
+=======
+int fp_status;
+  /* try cleaning up and bit and making this functions more readable and more focused */
+int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, extentlabel** head, char* filename, int* dc, int* ic, int* labelCount){
+    FILE* amFile;
+    char* token;
+    char line[MAX_LINE_LENGTH], originalLine[MAX_LINE_LENGTH];
+    char labelName[MAX_LABEL_LENGTH];
+    char sourceSequenceArray[16][4], destSequenceArray[16][4];
+    int commandCode, lineNum, isLabel, counterVal, isData;
+
+    fp_status = TRUE;  /* stopped here. not sure i should use global variable */
+    *labelCount = lineNum = 0;
+    /* move this to assembler program, maybe make this global variable */
+    set_sequence_array_source(sourceSequenceArray);
+    set_sequence_array_dest(destSequenceArray);
+
+    while (read_input_file(&amFile, filename, ".am", originalLine, &lineNum) == TRUE){
+        strcpy(line, originalLine);
+        token = strtok(line, PARAM_DELIMITERS);
+
+        isLabel = is_label(&token, labelName, lineNum);   /* NOTE: if label declaration is emtpy we get segmantation fault. */
+                    
+	if (isLabel != ERROR) {
+            counterVal = *dc;
+            isData = TRUE;
+            if ((commandCode = is_extent_instruction(token)) != FALSE)
+                extent_handler(head, &token, originalLine, commandCode, lineNum);
+
+            else if ((commandCode = is_datastring_instruction(token)) != FALSE)
+                datastring_handler(dcImage, &token, originalLine, dc, commandCode, lineNum);
+
+            else if ((commandCode = is_operation(token)) != -1){
+                counterVal = *ic;
+                isData = FALSE;
+
+                operation_handler(icImage, labelTable, &token, originalLine, ic, labelCount, commandCode, lineNum, sourceSequenceArray, destSequenceArray);
+            }
+            else
+                fp_error_handler(Unknown_Command, lineNum);
+
+            if (isLabel == TRUE){
+                if (commandCode == _ENTRY || commandCode == _EXTERN)
+                    fp_warning_handler(Label_Points_At_ExternEntry, lineNum);
+                else
+                    add_label(labelTable, labelName, labelCount, counterVal, isData, lineNum);  /* remove ic and dc, make them global variables */
+              /* NOTE: if label there is not command, and then counter isnt pointing anywhere valid, what do we do? */
+            }
+        }
+
+        CHECK_BUFFER_OVERFLOW((*dc), (*ic))
+    }
+
+    fclose(amFile);
+      /* close files */
+      /* free memory */
+    return fp_status;
+}
+
+int check_param_sequence(char sequenceArr[16][4], operand* operandd, int opcode, int lineNum, int sourceOrDest){
+    char addrMode;
+    int j;
+
+    addrMode = operandd->addrMode + '0';
+    j = 0;
+
+    while (sequenceArr[opcode][j] != '\0' && sequenceArr[opcode][j] != addrMode)
+        j++;
+    
+    if (sequenceArr[opcode][j] == '\0'){
+        if (sourceOrDest == _SOURCE){
+            if (addrMode == '0')
+                return fp_error_handler(Missing_Operand, lineNum);
+            return fp_error_handler(Invalid_Source_Sequence, lineNum);
+        }
+        else{
+            if (addrMode == '0')
+                return fp_error_handler(Missing_Operand, lineNum);
+            return fp_error_handler(Invalid_Dest_Sequence, lineNum);
+        }
+    }
+    return TRUE;
+}
+
+int fp_warning_handler(int warningCode, int lineNum){
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
     switch (warningCode){
     case Label_Points_At_ExternEntry:
         printf("Warning: Label points at .extern/.entry. Assembler will ignore the label. Line: %d\n", fp_lineNum);
@@ -763,11 +926,16 @@ int fp_error_handler(int errorCode){
     case Invalid_Dest_Sequence:
         printf("Error: Invalid destination operand. Line: %d\n", fp_lineNum);
         break;
+<<<<<<< HEAD
     case Missing_Dest_Operand:
         printf("Error: Missing destination operand. Line: %d\n", fp_lineNum);
         break;
     case Missing_Source_Operand:
         printf("Error: Missing source operand. Line: %d\n", fp_lineNum);
+=======
+    case Missing_Operand:
+        printf("Error: Missing operand in operation. Line: %d\n", lineNum);
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
         break;
     case Too_Many_Operands:
         printf("Error: Too many operands passed to operation. Line: %d\n", fp_lineNum);
@@ -788,16 +956,28 @@ int fp_error_handler(int errorCode){
         printf("Error: Undefined register. Line: %d\n", fp_lineNum);
         break;
     case Blank_Label_Declaration:
+<<<<<<< HEAD
         printf("Error: No operation/instruction found after label declaration. Line: %d\n", fp_lineNum);
         break;
     case Blank_Extent_Marking:
         printf("Error: No labels found after '.extern'/'.entry' marking. Line: %d\n", fp_lineNum);
+=======
+        printf("Error: No command found after label declaration. Line: %d\n", lineNum);
+        break;
+    case No_Lables_Extent_Marking:
+        printf("Error: No labels found after '.extern'/'.entry' marking. Line: %d\n", lineNum);
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
         break;
     case Illegal_String_Char:
     	printf("Error: Illegal character entered in string. Line: %d\n", fp_lineNum);
     	break;
+<<<<<<< HEAD
     case Blank_DataString_Instruction:
         printf("Error: No parameters/string found after '.data'/'string' instruction. Line: %d\n", fp_lineNum);
+=======
+    case No_Params_DataString_Instruction:
+        printf("Error: No params found after '.data'/'string' instruction. Line: %d\n", lineNum);
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a
         break;
     }
 

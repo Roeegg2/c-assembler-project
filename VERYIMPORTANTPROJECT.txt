@@ -1,0 +1,41 @@
+<<<<<<< HEAD
+errors to check:
+
+1. file entered with the .as ending does not exist
+2. empty label declaration
+3. the fucking mov @r1@r4, @r1@r4
+4. empty file entered
+5. line too long
+
+
+things to finish:
+are
+multiple label declaration
+
+
+
+things to write in appendix:
+multiple label declaration in one line
+multiple label declaration of same type warning
+
+=======
+errors to check:
+
+1. file entered with the .as ending does not exist
+2. empty label declaration
+3. the fucking mov @r1@r4, @r1@r4
+4. empty file entered
+5. line too long
+
+
+things to finish:
+are
+multiple label declaration
+
+
+
+things to write in appendix:
+multiple label declaration in one line
+multiple label declaration of same type warning
+
+>>>>>>> f5621da61b5ec581de1a3604c8a1775ab4200f1a

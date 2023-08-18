@@ -7,7 +7,6 @@ int read_input_file(FILE** sourceFile, char* filename, char* ending, char* line,
     if (*lineNum == 0){
         *sourceFile = open_file(filename, ending, "r"); 
         return FALSE;
-    }
     
 
     if (fgets(line, MAX_LINE_LENGTH, *sourceFile) == NULL)

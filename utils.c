@@ -17,20 +17,27 @@ int read_input_file(FILE** sourceFile, char* filename, char* ending, char* line,
 
 FILE* open_file(char* filename, char* ending, char* mode){
     FILE* file;
-    char foo[MAX_FILENAME_LENGTH];  /* add max for file extension as well */
+    char foo[MAX_FILENAME_LENGTH+3];
 
+    /*Get the full file name*/
     strcpy(foo, filename);
     strcat(foo, ending);
-    file = fopen(foo, mode);  /* change that "a" to mode when done testing */
+
+    /*open the file*/
+    file = fopen(foo, mode);
 
     return file;
 }
 
-int add_to_counterArray(char ***counterArray, int *counter, char *toAdd){
+int add_to_counterArray(char*** counterArray, int* counter, char* toAdd){
+    char* foo;
+
+    /*Adding another word slot*/
     (*counterArray) = (char **)realloc((*counterArray), sizeof(char *) * (*counter + 1));
     CHECK_ALLOCATION_ERROR(*counterArray)
-    
-    (*counterArray)[*counter] = (char *)malloc(sizeof(char) * MAX_LABEL_LENGTH);
+
+    /*Allocating for space for the new word*/
+    (*counterArray)[*counter] = (char *)malloc(sizeof(char) * strlen(toAdd));
     CHECK_ALLOCATION_ERROR(*counterArray)
     
     strcpy((*counterArray)[*counter], toAdd);
@@ -43,9 +50,9 @@ int free_extent(extentlabel* head){
     extentlabel* foo;
 
     while (head != NULL){
-        free(head->address.addr);
-        foo = head;
-        head = head->next;
+        free(head->address.addr); /*Free the addr field*/
+        foo = head; /*Saving head in temp to be able to free head node*/
+        head = head->next; 
         free(foo);
     }
 
@@ -56,10 +63,10 @@ int free_counter_array(char*** counterImage, int counter){
     int i;
 
     for (i = 0; i < counter; i++)
-        if ((*counterImage)[i] != NULL)
+        if ((*counterImage)[i] != NULL) /*Freeing each char in word allocated*/
             free((*counterImage)[i]);
     
-    free((*counterImage));
+    free((*counterImage)); /*freeing the main pointer (not pointer to pointer)*/
     
     return TRUE;
 }

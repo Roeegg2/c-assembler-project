@@ -14,12 +14,10 @@
 #define FALSE 0
 #define ERROR -1
 
-#define _DATA 1
-#define _STRING 2
-#define _ENTRY 3
-#define _EXTERN 4
-#define _INSTRUCTION 6
-#define _NONE 5
+#define _DATA 16
+#define _STRING 17
+#define _ENTRY 18
+#define _EXTERN 19
 
 enum SharedErrors {Illegal_Name_First_Char, Illegal_Name_Illegal_Chars, Illegal_Name_Saved_Word};
 
@@ -27,7 +25,7 @@ typedef struct label{
     char labelName[MAX_LABEL_LENGTH];
     int line;
     int address;
-    int isData; 
+    int isInstruction;
 } label;
 
 typedef struct extentlabel{
@@ -45,7 +43,7 @@ label* find_label(label* labelTable, char* labelName, int labelCount);
 extentlabel* find_extent_label(extentlabel* head, char* labelName);
 int convert_to_binary(char binary[], int number, int size);
 
-int legal_label_macro_name(char* name, int lineNum, int(*error_handler)(int, int));
+int legal_label_macro_name(char* name, int(*error_handler)(int));
 
 int is_operation(char* opname);
 int is_datastring_instruction(char* token);

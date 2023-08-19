@@ -7,7 +7,7 @@
 #define MAX_MACRO_NAME_LENGTH 30 
 #define DELIMITERS " \t\n"
 
-enum MacroErrors {Macro_Already_Exists = 3, Extratanatious_Text_After_Macro_Declaration, Line_Too_Long};
+enum MacroErrors {Macro_Already_Exists = 4, Extratanatious_Text_After_Macro_Declaration, Line_Too_Long};
 
 typedef struct macro{
     char name[MAX_MACRO_NAME_LENGTH];

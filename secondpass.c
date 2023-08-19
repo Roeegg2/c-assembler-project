@@ -39,6 +39,8 @@ int map_entry_labels(char*** icImage, label* labelTable, extentlabel* head, int 
                 (*icImage)[i][11] = '0';
                 (*icImage)[i][12] = '\0'; 
             }
+            else 
+                sp_error_handler(Unknown_Label, 999); /*If the word is encoded, but is not a label*/
  /* The error we are checking: if an unknown label is used as an operand  
  Doesnt work on some cases because we only loop over icArray, not dcArray            
  else if (find_extent_label(head, (*icImage)[i]) == NULL)

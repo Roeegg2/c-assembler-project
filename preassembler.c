@@ -153,7 +153,10 @@ int pa_error_handler(int errorCode){
             break;
         case Illegal_Name_Saved_Word:
             printf("Error: Illegal macro name. Label cant be named a saved word. Line: %d\n", pa_lineNum);
-            break;  
+            break; 
+        case Name_Too_Long:
+            printf("Error: Macro name exceeds max length. Line: %d\n", pa_lineNum);
+            break; 
         case Macro_Already_Exists:
             printf("Error: Macro already exists. Line: %d\n", pa_lineNum);
             break;
@@ -182,6 +185,8 @@ int legal_label_macro_name(char* name, int(*error_handler)(int)){
     if (strspn(name, "012345678abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") != strlen(name))
         return error_handler(Illegal_Name_Illegal_Chars);
     
+    if (strlen(name)-1 > MAX_LABEL_MACRO_LENGTH)
+        return error_handler(Name_Too_Long);
     return TRUE;
 }
 

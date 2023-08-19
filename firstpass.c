@@ -10,7 +10,7 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
     FILE* amFile;
     char* token;
     char line[MAX_LINE_LENGTH], originalLine[MAX_LINE_LENGTH]; 
-    char labelName[MAX_LABEL_LENGTH];
+    char labelName[MAX_LABEL_MACRO_LENGTH];
     int commandCode, isLabel, counterVal, isInstruction;
 
     fp_status = TRUE;
@@ -361,8 +361,6 @@ int add_extent_label(extentlabel** head, char** token, int type){
 int is_label(char **token, char *labelName, char *line){    
     if (LAST_CHARACTER(*token) != ':') /*If token doesnt end with ':' - it is not a label declaration*/
         return FALSE;
-    else if (strlen(*token)-1 > MAX_LABEL_LENGTH)
-        return fp_error_handler(Label_Name_Too_Long);
     else{ /*Removing the ':' to extract labelName*/
         LAST_CHARACTER(*token) = '\0';
         strcpy(labelName, *token);
@@ -386,7 +384,7 @@ label* find_label(label *labelTable, char *labelName, int labelCount){
 
 int add_operand_words(char ***icImage, label **labelTable, operation *op, int *ic, int labelCount){
     int sourceVal, destVal;
-    char binary[MAX_LABEL_LENGTH+10];
+    char binary[MAX_LABEL_MACRO_LENGTH+10];
 
     /* Getting the value we need to encode, depending on the type of the operand. The status are indicaters they are indeed valid operands*/
     get_type_val(labelTable, op->sourceOperand, &sourceVal, labelCount);
@@ -650,13 +648,15 @@ int extent_handler(extentlabel** head, char** token, char* originalLine, int com
 
     /* Find the pointer to the parameters after the token */
     paramsPtr = get_param_pointer(originalLine, LAST_CHARACTER(*token));
+    
     *token = strtok(NULL, " \t\n"); /* Move to the next token */
-
     if (*token == NULL)
         return fp_error_handler(Blank_Extent_Marking); /* Blank extent marking error */
 
-    /* Check if parameters exist after the token and process them */
-    if (get_comma_param_cnt(paramsPtr) != ERROR) {
+    if (legal_label_macro_name(*token, &fp_error_handler) == ERROR) /* Check if the label name is valid */
+        return ERROR;
+    
+    if (get_comma_param_cnt(paramsPtr) != ERROR){ /* Check if parameters exist after the token and process them */
         while (*token != NULL) {
             add_extent_label(head, token, commandCode); /* Add extent label to the linked list */
             *token = strtok(NULL, PARAM_DELIMITERS); /* Move to the next token */
@@ -781,7 +781,7 @@ int fp_error_handler(int errorCode){
     case Extent_Label_Already_Defined_Differently:
         printf("Error: Extent label already defined a different type. Line: %d\n", fp_lineNum);
         break;
-    case Label_Name_Too_Long:
+    case Name_Too_Long:
         printf("Error: Label name exceeds max length. Line: %d\n", fp_lineNum);
         break;
     case Undefined_Register:

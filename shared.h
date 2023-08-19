@@ -7,7 +7,7 @@
 
 /* change these later */
 #define MAX_LINE_LENGTH 82 
-#define MAX_LABEL_LENGTH 31
+#define MAX_LABEL_MACRO_LENGTH 31
 #define MAX_FILENAME_LENGTH 20
 
 #define TRUE 1
@@ -19,17 +19,17 @@
 #define _ENTRY 18
 #define _EXTERN 19
 
-enum SharedErrors {Illegal_Name_First_Char, Illegal_Name_Illegal_Chars, Illegal_Name_Saved_Word};
+enum SharedErrors {Illegal_Name_First_Char, Illegal_Name_Illegal_Chars, Illegal_Name_Saved_Word, Name_Too_Long};
 
 typedef struct label{
-    char labelName[MAX_LABEL_LENGTH];
+    char labelName[MAX_LABEL_MACRO_LENGTH];
     int line;
     int address;
     int isInstruction;
 } label;
 
 typedef struct extentlabel{
-    char labelName[MAX_LABEL_LENGTH];
+    char labelName[MAX_LABEL_MACRO_LENGTH];
     struct{
         int* addr;
         int count;

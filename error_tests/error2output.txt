@@ -1,0 +1,4 @@
+Error: Illegal macro name. First character must be a letter. Line: 4
+Error: Extratanatious text after macro declaration. Line: 6
+Error: Illegal macro name. Macro cant be named a saved word. Line: 8
+Error: Line: exceeds max length. Line: 14

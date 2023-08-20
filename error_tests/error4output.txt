@@ -1,0 +1,9 @@
+Error: label marked 'extern' but is also declared in code. Line: 1
+Error: label marked 'entry' but is not declared in code. Line: 2
+Error: label marked 'entry' but is not declared in code. Line: 3
+Error: label marked 'entry' but is not declared in code. Line: 4
+Error: unknown label is referenced in code. Line: 5
+Error: unknown label is referenced in code. Line: 6
+Error: unknown label is referenced in code. Line: 7
+Error: unknown label is referenced in code. Line: 8
+Error: unknown label is referenced in code. Line: 9

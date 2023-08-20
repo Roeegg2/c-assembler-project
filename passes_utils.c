@@ -1,6 +1,6 @@
-/*manager function. its job is to read from the input file, and report any errors that arise.*/
-#include "utils.h"
-#include "shared.h"
+#include "passes_utils.h"
+
+#define MAX_FILENAME_LENGTH 20
 
 FILE* open_file(char* filename, char* ending, char* mode){
     FILE* file;
@@ -38,42 +38,5 @@ int add_to_counterArray(char*** counterArray, int* counter, char* toAdd){
     strcpy((*counterArray)[*counter], toAdd);
     (*counter)++;
 
-    return TRUE;
-}
-
-int free_extent(extentlabel* head){
-    extentlabel* foo;
-
-    while (head != NULL){
-        free(head->address.addr); /*Free the addr field*/
-        foo = head; /*Saving head in temp to be able to free head node*/
-        head = head->next; 
-        free(foo);
-    }
-
-    return TRUE;
-}
-
-int free_maplabel(maplabel* mapHead){
-    maplabel* foo;
-
-    while (mapHead != NULL){
-        foo = mapHead;
-        mapHead = mapHead->next;
-        free(foo);
-    }
-
-    return TRUE;
-}
-
-int free_counter_array(char*** counterImage, int counter){
-    int i;
-
-    for (i = 0; i < counter; i++)
-        if ((*counterImage)[i] != NULL) /*Freeing each char in word allocated*/
-            free((*counterImage)[i]);
-    
-    free((*counterImage)); /*freeing the main pointer (not pointer to pointer)*/
-    
     return TRUE;
 }

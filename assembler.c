@@ -1,7 +1,4 @@
-#include "firstpass.h"
-#include "secondpass.h"
-#include "preassembler.h"
-#include "utils.h"
+#include "assembler.h"
 
 int PRINTWORDS(char **counterArray, int counter, int subCounter){
     int i;
@@ -75,4 +72,41 @@ int main(int argc, char** argv){
 
     printf("\nProgram finished.\nFully processed %d/%d files.\n", fpf, i-1);
     return 0;
+}
+
+int free_extent(extentlabel* head){
+    extentlabel* foo;
+
+    while (head != NULL){
+        free(head->address.addr); /*Free the addr field*/
+        foo = head; /*Saving head in temp to be able to free head node*/
+        head = head->next; 
+        free(foo);
+    }
+
+    return TRUE;
+}
+
+int free_maplabel(maplabel* mapHead){
+    maplabel* foo;
+
+    while (mapHead != NULL){
+        foo = mapHead;
+        mapHead = mapHead->next;
+        free(foo);
+    }
+
+    return TRUE;
+}
+
+int free_counter_array(char*** counterImage, int counter){
+    int i;
+
+    for (i = 0; i < counter; i++)
+        if ((*counterImage)[i] != NULL) /*Freeing each char in word allocated*/
+            free((*counterImage)[i]);
+    
+    free((*counterImage)); /*freeing the main pointer (not pointer to pointer)*/
+    
+    return TRUE;
 }

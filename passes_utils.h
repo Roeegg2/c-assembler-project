@@ -3,10 +3,6 @@
 
 #include "shared.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #define MAX_PROG_MEMORY_SIZE 924
 
 #define CHECK_ALLOCATION_ERROR(ptr) if(ptr == NULL) {printf("Assembler: encountered allocation error.\nTerminating program...\n"); exit(1);}
@@ -17,6 +13,11 @@
 #define CHECK_NO_CODE_FILE(asPtr, amPtr, status) if(ftell(asPtr) != 0 && ftell(amPtr) == 0) {printf("Assembler: no code to analyze in prompted '.as' file. Moving to the next file...\n"); status = ERROR;}
 
 #define LAST_CHARACTER(string) *(string+strlen(string)-1)
+#define CHAR_TO_INT(c) (c - '0')
+#define INT_TO_CHAR(i) (i + '0')
+
+#define IS_WHITENOTE(c) ((c == ' ' || c == '\t'))
+#define IS_NEWLINE(c) ((c == '\n'))
 
 /**
  * This function removes a file with a given filename and ending.
@@ -47,32 +48,6 @@ FILE* open_file(char* filename, char* ending, char* mode);
  * @return The success status of adding a string to the counterArray.
  */
 int add_to_counterArray(char*** counterArray, int* counter, char* toAdd);
-
-/**
- * This function frees memory occupied by the extent label linked list.
- *
- * @param head Pointer to the head of the extent label linked list.
- * @return The success status of freeing the extent label linked list.
- */
-int free_extent(extentlabel* head);
-
-/**
- * This function frees memory occupied by the map label linked list.
- * 
- * @param mapHead Pointer to the head of the map label linked list.
- * @return The success status of freeing the map label linked list.
-*/
-
-int free_maplabel(maplabel* mapHead);
-
-/**
- * This function frees memory occupied by the counterArray.
- *
- * @param counterImage Pointer to the counterArray.
- * @param counter Number of elements in the counterArray.
- * @return The success status of freeing the counterArray.
- */
-int free_counter_array(char*** counterImage, int counter);
 
 /*DEBUGGING FUNCTIONS*/
 

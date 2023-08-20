@@ -1,6 +1,5 @@
 #include "preassembler.h"
-#include "shared.h"
-#include "utils.h"
+#include "passes_utils.h"
 
 int pa_status;
 int pa_lineNum;
@@ -9,7 +8,7 @@ int invoke_preassembler(char* filename){
     macro* head;
     FILE* asFile;
     FILE* amFile;
-    char originalLine[MAX_LINE_LENGTH], line[MAX_LINE_LENGTH], macroName[MAX_MACRO_NAME_LENGTH];
+    char originalLine[MAX_LINE_LENGTH+2], line[MAX_LINE_LENGTH], macroName[MAX_LABEL_MACRO_LENGTH];
     char* token;
 
     head = NULL;
@@ -21,7 +20,9 @@ int invoke_preassembler(char* filename){
     amFile = open_file(filename, ".am", "w");
     CHECK_OPENING_FALIURE(amFile)
     
-    while (fgets(originalLine, MAX_LINE_LENGTH, asFile) != NULL){
+    while (fgets(originalLine, MAX_LINE_LENGTH+2, asFile) != NULL){
+        pa_lineNum++;
+        check_line_too_long(&asFile, originalLine);
         strcpy(line, originalLine);
         token = strtok(line, DELIMITERS);
 
@@ -50,6 +51,27 @@ int invoke_preassembler(char* filename){
         remove_file(filename, ".am");
         
     return pa_status;
+}
+
+int is_mcro_or_endmcro_word(char* token){
+    if (strcmp(token, "mcro") == 0)
+        return TRUE;
+    if (strcmp(token, "endmcro") == 0)
+        return TRUE;
+    
+    return FALSE;
+}
+
+int check_line_too_long(FILE** asFile, char* line){
+    int c;
+
+    if (strlen(line) > MAX_LINE_LENGTH){
+        while ((c = fgetc(*asFile)) != EOF && !IS_NEWLINE(c))
+            continue; /*Becasue fgets is reading until '\n' or end of the buffer size provided, in order to discard the rest of chars in that line I keep reading until we reach EOF or '\n' - end of line*/
+        pa_error_handler(Line_Too_Long);
+    }
+    
+    return TRUE;
 }
 
 int write_line(FILE** amFile, macro* head, char** token, char* writeLine){
@@ -161,10 +183,10 @@ int pa_error_handler(int errorCode){
             printf("Error: Illegal macro name. First character must be a letter. Line: %d\n", pa_lineNum);
             break;
         case Illegal_Name_Illegal_Chars:
-            printf("Error: Illegal macro name. Label name can only contain letters and numbers. Line: %d\n", pa_lineNum);
+            printf("Error: Illegal macro name. Macro name can only contain letters and numbers. Line: %d\n", pa_lineNum);
             break;
         case Illegal_Name_Saved_Word:
-            printf("Error: Illegal macro name. Label cant be named a saved word. Line: %d\n", pa_lineNum);
+            printf("Error: Illegal macro name. Macro cant be named a saved word. Line: %d\n", pa_lineNum);
             break; 
         case Name_Too_Long:
             printf("Error: Macro name exceeds max length. Line: %d\n", pa_lineNum);
@@ -186,7 +208,7 @@ int pa_error_handler(int errorCode){
 
 int legal_label_macro_name(char* name, int(*error_handler)(int)){
     /* If label/macro are a saved word*/
-    if (is_extent_instruction(name) != FALSE || is_operation(name) != -1 || is_datastring_instruction(name) != FALSE)
+    if (is_extent_instruction(name) != FALSE || is_operation(name) != -1 || is_datastring_instruction(name) != FALSE || is_mcro_or_endmcro_word(name) != FALSE)
         return error_handler(Illegal_Name_Saved_Word);
     
     /*If label/macro first letter isnt a letter*/
@@ -200,19 +222,4 @@ int legal_label_macro_name(char* name, int(*error_handler)(int)){
     if (strlen(name)-1 > MAX_LABEL_MACRO_LENGTH)
         return error_handler(Name_Too_Long);
     return TRUE;
-}
-
-int check_line_too_long(char* line){
-    int i;
-
-    /*still a problem here when in the last line of the file you dont hit enter*/
-    for (i = 0; i < strlen(line)-1; i++)
-        if (line[i] == '\n' || line[i] == '\0')
-            return TRUE;
-
-    if (line[i] == '\n')
-        return TRUE;
-
-    pa_error_handler(Line_Too_Long);
-    return FALSE;
 }

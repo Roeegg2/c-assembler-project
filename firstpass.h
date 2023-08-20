@@ -1,31 +1,19 @@
 #ifndef FIRSTPASS_H
 #define FIRSTPASS_H
 
-#include "shared.h"
+#include "shared_fp_pa.h"
+#include "shared_fp_sp.h"
 
 /* check all of these and make sure they are right! */
-#define SIZE_OF_WORD 12
-
-#define MAX_DATA_LENGTH 10 
-#define MAX_OPERANDS 2
-
 #define PARAM_DELIMITERS " \t\n,"
 
-#define ABSOLUTE "00"
-#define RELOCATABLE "10"
-#define EXTERNAL "01"
-
-#define _WHITENOTE 1
 #define _COMMA 2
 #define _CHAR 3
 
 #define _SOURCE 0
 #define _DEST 1
 
-#define BOTH_ARE_NOT_NULL(sourceStatus, destStatus) (sourceStatus == 1 && destStatus == 1)
 #define BOTH_ARE_REGISTER(op) (op->destOperand->addrMode == Register && op->sourceOperand->addrMode == Register)
-
-#define CHAR_TO_INT(c) (c - '0')
 
 enum Opcodes {Mov = 0, Cmp, Add, Sub, Not, Clr, Lea, Inc, Dec, Jmp, Bne, Red, Prn, Jsr, Rts, Stop};
 enum AddressingModes {No_Operand = 0, Immediate = 1, Direct = 3, Register = 5};
@@ -354,5 +342,15 @@ int fp_warning_handler(int warningCode);
  * @return The error status.
  */
 int fp_error_handler(int errorCode);
+
+/**
+ * This function adds a string to the counterArray and increments the counter.
+ *
+ * @param counterArray Pointer to the counterArray.
+ * @param counter Pointer to the current counter value.
+ * @param toAdd String to add to the counterArray.
+ * @return The success status of adding a string to the counterArray.
+ */
+int add_to_counterArray(char*** counterArray, int* counter, char* toAdd);
 
 #endif /* FIRSTPASS_H */

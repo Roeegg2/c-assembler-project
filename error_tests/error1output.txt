@@ -1,0 +1,18 @@
+Error: Extent label already defined a different type. Line: 2
+Error: Undefined register. Line: 4
+Error: Missing comma. Line: 5
+Error: Unknown command in line 8
+Error: Unknown command in line 9
+Error: Missing comma. Line: 11
+Error: Missing comma. Line: 12
+Error: Unknown command in line 13
+Error: Extra comma at the end/start in line 14
+Error: Extra comma at the end/start in line 15
+Error: Unknown command in line 17
+Error: Invalid source operand. Line: 18
+Error: Missing comma. Line: 19
+Error: Illegal string declaration (are you missing ""?). Line: 22
+Error: Double comma in line 23
+Error: Extra comma at the end/start in line 24
+Error: Found an invalid parameter. Command requires a whole number. Line: 25
+Error: Illegal string declaration (are you missing ""?). Line: 26

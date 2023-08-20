@@ -1,0 +1,16 @@
+Warning: Extent label already defined with same type. Line: 2
+Error: Extent label already defined a different type. Line: 3
+Error: Illegal label name. First character must be a letter. Line: 4
+Error: Illegal label name. Label cant be named a saved word Line: 5
+Error: Unknown command in line 6
+Error: Too many operands passed to operation. Line: 7
+Error: Illegal label name. Label cant be named a saved word Line: 8
+Error: Missing comma. Line: 9
+Error: Unknown command in line 10
+Error: Label name exceeds max length. Line: 11
+Error: Unknown command in line 12
+Error: Missing comma. Line: 13
+Error: Illegal string declaration (are you missing ""?). Line: 15
+Error: Illegal string declaration (are you missing ""?). Line: 16
+Error: Illegal label name. Label cant be named a saved word Line: 17
+Error: Missing comma. Line: 18

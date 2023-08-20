@@ -1,7 +1,5 @@
 #include "firstpass.h"
-#include "shared.h"
-#include "utils.h"
-
+#include "passes_utils.h"
 
 int fp_status; /*A flag variable. Its value is error if one is found, otherwise it stays true*/
 int fp_lineNum; /*A variable to keep track of the current line of the .am file*/
@@ -16,10 +14,11 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
     fp_status = TRUE;
     *labelCount = fp_lineNum = 0;
 
-    amFile = open_file(filename, ".am", "w");
+    amFile = open_file(filename, ".am", "r");
     CHECK_OPENING_FALIURE(amFile)
 
     while (fgets(originalLine, MAX_LINE_LENGTH, amFile)){
+        fp_lineNum++;
         strcpy(line, originalLine);
         token = strtok(line, PARAM_DELIMITERS);
 
@@ -30,7 +29,7 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
         counterVal = *dc;
         isInstruction = TRUE;
 
-        if (isLabel != ERROR){ /*Avoiding invalid label declaration*/
+        if (isLabel != ERROR){ /*Avoiding analysis if found an invalid label declaration*/
             if ((commandCode = is_extent_instruction(token)) != FALSE) /*If we got .ext/.ent instruction*/
                 extent_handler(head, &token, originalLine, commandCode);
 
@@ -53,7 +52,6 @@ int invoke_firstpass(char*** dcImage, char*** icImage, label** labelTable, exten
                     add_label(labelTable, labelName, labelCount, counterVal, isInstruction);  /*Otherwise, add the label*/
             }
         }
-        fp_lineNum++;
     }
     
     CHECK_BUFFER_OVERFLOW((*dc), (*ic)) /*Making sure we dont exceed machine memory (924) */
@@ -66,7 +64,7 @@ int check_param_sequence(char sequenceArr[16][4], operand* operandd, int opcode,
     char addrMode;
     int j;
 
-    addrMode = operandd->addrMode + '0';
+    addrMode = INT_TO_CHAR(operandd->addrMode);
     j = 0;
 
     /*Check if the addr is valid for this operation*/
@@ -90,9 +88,6 @@ int check_param_sequence(char sequenceArr[16][4], operand* operandd, int opcode,
 }
 
 
-/*function that receives a string, a number and a size, and writes into the string the binary */
-/* what is counter type? maybe switch (*labelTable) with something more readable? */
-/* might break when number entered is negative */
 int convert_to_binary(char binary[], int number, int size){
     int isNegative, i;
 
@@ -107,7 +102,7 @@ int convert_to_binary(char binary[], int number, int size){
     /*Getting binary encoding of abs value*/
     i = size - 1;
     while (number > 0){
-        binary[i] = '0' + number % 2;
+        binary[i] = INT_TO_CHAR((number % 2));
         number /= 2;
         i--;
     }
@@ -117,6 +112,7 @@ int convert_to_binary(char binary[], int number, int size){
         flip_negative(binary);
         add_one(binary);
     }
+    
     return 0;
 }
 
@@ -129,7 +125,6 @@ int flip_negative(char binary[]){
     return TRUE;
 }
 
-/*a helper function to add 1 to the the binary repressentation for negative numbers. Part of the 2's complement steps*/
 int add_one(char binary[]){
     int carry, i;
     carry = 1;
@@ -151,7 +146,7 @@ int add_label(label **labelTable, char *labelName, int *labelCount, int counterV
     (*labelTable) = (label *)realloc((*labelTable), sizeof(label) * ((*labelCount) + 1));
     CHECK_ALLOCATION_ERROR((*labelTable))
 
-    /*If a label with the same name was already declared*/
+    /*If a label with tfhe same name was already declared*/
     if (find_label(*labelTable, labelName, *labelCount) != NULL)
         return fp_error_handler(Label_Already_Defined);
 
@@ -165,13 +160,13 @@ int add_label(label **labelTable, char *labelName, int *labelCount, int counterV
 }
 
 int add_first_op_word(char ***icImage, operation *op, int *ic){
-    char binary[13]; /* 12 binary digits + 1 null terminator */
+    char binary[SIZE_OF_WORD]; /* 12 binary digits + 1 null terminator */
     
-    memset(binary, '\0', 13);
+    memset(binary, '\0', SIZE_OF_WORD);
     convert_to_binary(binary + 0, op->sourceOperand->addrMode, 3); /*Getting source addressing mode encoding*/
     convert_to_binary(binary + 3, op->opcode, 4); /*Endcoding of the opcode*/
     convert_to_binary(binary + 7, op->destOperand->addrMode, 3); /*Getting destination addressing mode encoding*/
-    strcat(binary, "00");
+    strcat(binary, ABSOLUTE);
     
     add_to_counterArray(icImage, ic, binary);
 
@@ -224,7 +219,7 @@ int check_string_formatting(char* stringLine, int *index1, int *index2){
     while (i < strlen(stringLine) && *index1 == FALSE){
         if (stringLine[i] == '\"') /*If we found " */
             *index1 = i;
-        else if (stringLine[i] != '\t' && stringLine[i] != ' ')/* If we havent found a " and its not a whitenote - that means there is a character outside of "" - error*/
+        else if (!IS_WHITENOTE(stringLine[i]))/* If we havent found a " and its not a whitenote - that means there is a character outside of "" - error*/
             return FALSE;
         i++;
     }
@@ -235,7 +230,7 @@ int check_string_formatting(char* stringLine, int *index1, int *index2){
         if (stringLine[i] == '\"' && *index1 != i)
             *index2 = i;
         /* If the current char isnt a whitenote - meaning there is text outside of "" */
-        else if (stringLine[i] != '\t' && stringLine[i] != ' ' && stringLine[i] != '\n')
+        else if (!IS_WHITENOTE(stringLine[i]) && !IS_NEWLINE(stringLine[i]))
             return FALSE;
         i--;
     }
@@ -301,7 +296,7 @@ int analyze_data(char** token, int** params){
 
 int add_data_word(char ***dcImage, int *params, int *dc, int paramCnt){
     int i;
-    char binary[13];
+    char binary[SIZE_OF_WORD];
 
     for (i = 0; i < paramCnt; i++){ 
         convert_to_binary(binary, params[i], 12); /*Convert each param to binary*/
@@ -321,7 +316,6 @@ extentlabel* find_extent_label(extentlabel* head, char* labelName){
     return NULL;
 }
 
-/* want to change implementation */
 int add_extent_label(extentlabel** head, char** token, int type){
     extentlabel* newNode;
     extentlabel* temp;
@@ -361,15 +355,19 @@ int add_extent_label(extentlabel** head, char** token, int type){
 int is_label(char **token, char *labelName, char *line){    
     if (LAST_CHARACTER(*token) != ':') /*If token doesnt end with ':' - it is not a label declaration*/
         return FALSE;
-    else{ /*Removing the ':' to extract labelName*/
-        LAST_CHARACTER(*token) = '\0';
-        strcpy(labelName, *token);
-        *token = strtok(NULL, PARAM_DELIMITERS);
-    }
+        
+    LAST_CHARACTER(*token) = '\0'; /*Removing the ':' to extract labelName*/
+
+    if (legal_label_macro_name(*token, &fp_error_handler) == ERROR)
+        return ERROR;
+
+    strcpy(labelName, *token); /*Saving label name*/
+    *token = strtok(NULL, PARAM_DELIMITERS); /*For checking if the label declaration is empty*/
+
     if (*token == NULL)
         return fp_error_handler(Blank_Label_Declaration);
     
-    return legal_label_macro_name(labelName, &fp_error_handler); /* Some more checking for errors*/   
+    return TRUE;
 }
 
 label* find_label(label *labelTable, char *labelName, int labelCount){
@@ -428,7 +426,7 @@ int get_operand_value(operand* op, char* token){
     }
     else if (token[0] == '@' && token[1] == 'r'){ /*If param starts with @r*/
         foo[0] = token[3];
-        if (strspn(foo, "0123456789") == 1) /*If the numebr is 2 digits - invalid reg num*/
+        if (strspn(foo, "0123456789") == 1 || strlen(token) != 3) /*If the numebr is 2 digits - invalid reg num or if operand isnt 3 chars long (@rx) (this detects errors like mov @r2@r4 @r3@r2)*/
             return fp_error_handler(Undefined_Register);
 
         foo[0] = token[2];
@@ -490,7 +488,7 @@ int get_register_word(char* binary, int sourceVal, int destVal) {
     /* Convert sourceVal and destVal to binary and store them in the buffer, 5 bits space for each */
     convert_to_binary(binary, sourceVal, 5);
     convert_to_binary(binary + 5, destVal, 5);
-    strcat(binary, "00"); 
+    strcat(binary, ABSOLUTE); 
 
     return TRUE;
 }
@@ -499,7 +497,7 @@ int get_isolated_word(operand *operandd, char* binary, int val, int destOrSource
     if (operandd->addrMode == No_Operand)
         return FALSE;
 
-    memset(binary, '\0', 13); /* Clear the binary buffer */
+    memset(binary, '\0', SIZE_OF_WORD); /* Clear the binary buffer */
 
     if (operandd->addrMode == Register){
         if (destOrSource == _SOURCE)
@@ -511,7 +509,7 @@ int get_isolated_word(operand *operandd, char* binary, int val, int destOrSource
         strcpy(binary, operandd->val.labelName); /* Copy the label name to the buffer, to be analyzed later in secondpass */ 
     else {
         convert_to_binary(binary, val, 10); /* Convert val to binary of 10 bits*/
-        strcat(binary, "00");
+        strcat(binary, ABSOLUTE);
     }
 
     return TRUE;
@@ -539,17 +537,17 @@ int get_comma_param_cnt(char* line) {
         return TRUE;
 
     /*While we havent reached the end of the string*/
-    while (line[i] != '\n' && line[i] != '\0') {
+    while (!IS_NEWLINE(line[i]) && line[i] != '\0') {
         if (line[i] == ',') {
             status2 = status1;
             status1 = _COMMA;
             commaCnt++; 
-        } else if (line[i] != ' ' && line[i] != '\t' && line[i] != '\n' && line[i] != '\0') {  /* If we found parameter */
+        } else if (!IS_WHITENOTE(line[i]) && !IS_NEWLINE(line[i]) && line[i] != '\0') {  /* If we found parameter */
             status2 = status1;
             status1 = _CHAR;
             paramCnt++; 
             /* Continuing the loop, for parameters which consist odf multiple chars (registers for example) */
-            while (line[i] != ' ' && line[i] != '\t' && line[i] != '\n' && line[i] != '\0' && line[i] != ',')
+            while (!IS_WHITENOTE(line[i]) && !IS_NEWLINE(line[i]) && line[i] != '\0' && line[i] != ',')
                 i++;
             i--;
         }
@@ -610,9 +608,9 @@ char* get_param_pointer(char* orgLineToken, char toFind) {
     i = 0;
 
     /* While we havent reached the end of the string */
-    while (orgLineToken[i+1] != '\n' && orgLineToken[i+1] != '\0') {
+    while (!IS_NEWLINE(orgLineToken[i+1]) && orgLineToken[i+1] != '\0') {
         /* If we found the start of parameters */
-        if (orgLineToken[i] == toFind && (orgLineToken[i+1] == ' ' || orgLineToken[i+1] == '\t' || orgLineToken[i+1] == ',')) {
+        if (orgLineToken[i] == toFind && (IS_WHITENOTE(orgLineToken[i+1]) || orgLineToken[i+1] == ',')) {
             return orgLineToken + i+1; /* Return pointer to the next parameter */
         }
         i++; 
@@ -825,3 +823,4 @@ int fp_error_handler(int errorCode){
     fp_status = ERROR;
     return ERROR;
 }
+

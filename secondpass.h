@@ -1,4 +1,4 @@
-#include "shared.h"
+#include "shared_fp_sp.h"
 
 enum SecondpassErrors {Extern_Declared = 0, Entry_Not_Declared, Unknown_Label};
 

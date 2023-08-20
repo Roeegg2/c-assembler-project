@@ -1,6 +1,5 @@
 #include "secondpass.h"
-#include "shared.h"
-#include "utils.h"
+#include "passes_utils.h"
 
 int sp_status;
 
@@ -32,15 +31,15 @@ int map_entry_labels(char*** icImage, label* labelTable, extentlabel* head, mapl
             temp = find_maplabel(mapHead, i);
 
             if (foo != NULL){ /*If the word is indeed a label*/
-                (*icImage)[i] = (char*)realloc((*icImage)[i], sizeof(char) * 13);
+                (*icImage)[i] = (char*)realloc((*icImage)[i], sizeof(char) * SIZE_OF_WORD);
                 CHECK_ALLOCATION_ERROR((*icImage)[i]);
 
-                memset((*icImage)[i], '\0', 13);
+                memset((*icImage)[i], '\0', SIZE_OF_WORD);
                 convert_to_binary((*icImage)[i], foo->address, 10); /*Get its encoding and write it*/
-                strcat((*icImage)[i], "00"); /*Adding ARE bits*/
+                strcat((*icImage)[i], RELOCATABLE); /*Adding ARE bits*/
             }
             else 
-                sp_error_handler(Unknown_Label, temp->icAddress);
+                sp_error_handler(Unknown_Label, temp->lineNum);
         }
     }
     return TRUE;
@@ -48,7 +47,7 @@ int map_entry_labels(char*** icImage, label* labelTable, extentlabel* head, mapl
 
 maplabel* find_maplabel(maplabel* head, int icAddress){
     while (head != NULL){
-        if (head->icAddress == icAddress)
+        if (head->icAddress == icAddress) /*If the address provided matches a labels address*/
             return head;
         head = head->next;
     }
@@ -66,12 +65,12 @@ int write_ob_file(char** icArray, char** dcArray, char* filename, int ic, int dc
 
     fprintf(obFile, "%d\t%d\n", ic, dc); /*Printing ic and dc values on top*/
     
-    for (i = 0; i < ic; i++){ /* MAYBE add error detection if there is a label unconvered */
+    for (i = 0; i < ic; i++){
         fprintf(obFile, "%c", binary_to_base64(base64Table, icArray[i], 0)); /*Writing 1st letter bits (0-6)*/
         fprintf(obFile, "%c\n", binary_to_base64(base64Table, icArray[i], 6)); /*Writing 2nd letter (6-12)*/
     }
     
-    for (i = 0; i < dc; i++){ /* MAYBE add error detection if there is a label unconvered */
+    for (i = 0; i < dc; i++){
         fprintf(obFile, "%c", binary_to_base64(base64Table, dcArray[i], 0)); /*Writing 1st letter bits (0-6)*/
         fprintf(obFile, "%c\n", binary_to_base64(base64Table, dcArray[i], 6)); /*Writing 2nd letter bits (6-12)*/
     }
@@ -97,7 +96,7 @@ int write_extent_file(label* labelTable, extentlabel* head, char* filename, int 
     int extFlag, entFlag;
 
     extFlag = entFlag = FALSE;
-    /* is opening and closing like this okay*/
+
     while (head != NULL){
         if (head->type == _EXTERN && head->address.count > 0){ /*If head is marked extern, and is mentioned as operand in program*/
             get_file_and_flag(&extFile, filename, ".ext", &extFlag);
@@ -132,8 +131,7 @@ int complete_extent_data(char*** icImage, label* labelTable, extentlabel* head, 
     while (head != NULL){
         if (head->type == _ENTRY)
             get_data_entry(labelTable, head, labelCount); /*Complete entry data*/
-            /*NOTE: Since I was looping over labelTable, I moved the error checking there to reduce code duplication */
-        
+            /*NOTE: Since I was looping over labelTable on get_data_entry anyway, I moved the error checking there to make it cleaner*/
         else{
             get_data_extern(icImage, head, ic); /*Complete extern data*/
             if (find_label(labelTable, head->labelName, labelCount) != NULL) 
@@ -184,7 +182,7 @@ char binary_to_base64(char* base64Table, char* binary, int start){
 
     decimalValue = 0;
     for (i = start; i < 6+start; i++)
-        decimalValue = (decimalValue << 1) + (binary[i] - '0');
+        decimalValue = (decimalValue << 1) + (CHAR_TO_INT(binary[i]));
 
     return base64Table[decimalValue];
 }

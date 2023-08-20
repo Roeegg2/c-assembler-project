@@ -1,0 +1,10 @@
+.extern EXTERNLABEL
+.entry IDONTEXIST
+.entry IDONTEXISTTOO
+.entry IDONTEXISTEITHER
+EXTERNLABEL: mov @r1, L2
+jmp L100
+jmp L99
+jmp L98
+jmp L97
+stop

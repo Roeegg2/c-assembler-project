@@ -1,19 +1,35 @@
 #ifndef PREASSEMBLER_H
 #define PREASSEMBLER_H
 
-#include "shared.h"
+#include "shared_fp_pa.h"
 
-/* need to change that! */
-#define MAX_MACRO_NAME_LENGTH 30 
 #define DELIMITERS " \t\n"
 
 enum MacroErrors {Macro_Already_Exists = 4, Extratanatious_Text_After_Macro_Declaration, Line_Too_Long};
 
 typedef struct macro{
-    char name[MAX_MACRO_NAME_LENGTH];
+    char name[MAX_LABEL_MACRO_LENGTH];
     char* code;
     struct macro* next;
 } macro;
+
+/**
+ * This function checks if a word is a mcro or endmcro word.
+ *
+ * @param token Word to check.
+ * @return True if the word is a mcro or endmcro word, false otherwise.
+ */
+int is_mcro_or_endmcro_word(char* token);
+
+/**
+ * This function checks if a line is too long and handles related errors.
+ *
+ * @param line Line to check.
+ * @param asFile Pointer to the .as file
+ * @return The success status of checking the line length.
+ */
+
+int check_line_too_long(FILE** asFile, char* line);
 
 /**
  * This function starts the preassembler process, which processes macro declarations, expands macros,
@@ -99,13 +115,5 @@ int check_for_macro_erros(char** token, macro* head);
  * @return The status indicating whether an error occurred.
  */
 int pa_error_handler(int errorCode);
-
-/**
- * This function checks if a line is too long and handles related errors.
- *
- * @param line Line to check.
- * @return The success status of checking the line length.
- */
-int check_line_too_long(char* line);
 
 #endif /*PREASSEMBLER_H*/

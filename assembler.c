@@ -1,30 +1,5 @@
 #include "assembler.h"
 
-int PRINTWORDS(char **counterArray, int counter, int subCounter){
-    int i;
-    for (i = subCounter; i < counter + subCounter; i++){
-        printf("address %d:", i + 100);
-        printf(" %s\n", counterArray[i - subCounter]);
-    }
-    return 0;
-}
-
-int PRINTEXTENT(extentlabel *head){
-    while (head != NULL){
-        printf("label: %s, type: %d\n", head->labelName, head->type);
-        head = head->next;
-    }
-    return 0;
-}
-
-int PRINTLABEL(label *labelTable, int labelCount){
-    int i;
-    for (i = 0; i < labelCount; i++){
-        printf("label: %s, address: %d\n", labelTable[i].labelName, labelTable[i].address);
-    }
-    return 0;
-}
-
 int main(int argc, char** argv){
     label *labelTable;
     extentlabel *head;
@@ -53,15 +28,6 @@ int main(int argc, char** argv){
             status = invoke_firstpass(&dcImage, &icImage, &labelTable, &head, &mapHead, argv[i], &dc, &ic, &labelCount, sourceSequenceArray, destSequenceArray);
         if (status == TRUE)
             invoke_secondpass(&dcImage, &icImage, labelTable, head, mapHead, argv[i], labelCount, dc, ic, &fpf);  
-        
-/*         printf("-------- ext/ent list: --------\n");
-        PRINTEXTENT(head);
-        printf("-------- instructions words: --------\n");
-        PRINTWORDS(icImage, ic, 0);
-        printf("-------- data words: --------\n");
-        PRINTWORDS(dcImage, dc, ic);
-        printf("-------- label table: --------\n");
-        PRINTLABEL(labelTable, labelCount);   */
 
         free(labelTable);
         free_counter_array(&dcImage, dc);

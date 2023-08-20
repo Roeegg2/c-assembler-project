@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "typeinfo": "c",
-        "string.h": "c",
-        "secondpass.h": "c",
-        "utils.h": "c"
-    }
-}
